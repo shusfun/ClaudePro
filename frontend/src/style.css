@@ -1,4 +1,4 @@
-@import "tailwindcss";
+@import "tailwindcss" source(none);
 @import "./components/ui/styles/tokens.css";
 @import "./components/ui/styles/theme.css";
 @import "./components/ui/styles/instruments.css";
@@ -8,4 +8,4 @@
 @import "./styles/shell.css";
 @import "./styles/pages.css";
 @custom-variant dark (&:where(.dark, .dark *));
-@source './components/ui';
+@source './';
