@@ -36,22 +36,37 @@ func (d *Demo) Read() (core.Environment, error) {
 	}
 	return env, err
 }
+func cultureName(id string) string {
+	names := map[string]string{
+		"zh-CN": "中文（中国） / zh-CN", "zh_CN": "中文（中国） / zh_CN",
+		"en-US": "英语（美国） / en-US", "en_US": "英语（美国） / en_US",
+		"en-GB": "英语（英国） / en-GB", "en_GB": "英语（英国） / en_GB",
+		"de-DE": "德语（德国） / de-DE", "de_DE": "德语（德国） / de_DE",
+		"ja-JP": "日语（日本） / ja-JP", "ja_JP": "日语（日本） / ja_JP",
+		"en-SG": "英语（新加坡） / en-SG", "en_SG": "英语（新加坡） / en_SG",
+	}
+	if name := names[id]; name != "" {
+		return name
+	}
+	return id
+}
+
 func (d *Demo) Catalog() (core.Catalog, error) {
 	catalog := core.Catalog{
 		Timezones: []core.Option{{ID: "China Standard Time", Name: "(UTC+08:00) 北京"}, {ID: "Eastern Standard Time", Name: "(UTC-05:00) 美国东部"}, {ID: "Pacific Standard Time", Name: "(UTC-08:00) 美国西部"}},
-		Cultures:  []core.Option{{ID: "zh-CN", Name: "中文（中国） / zh-CN"}, {ID: "en-US", Name: "英语（美国） / en-US"}},
+		Cultures:  []core.Option{{ID: "zh-CN", Name: cultureName("zh-CN")}, {ID: "en-US", Name: cultureName("en-US")}},
 		Regions:   []core.Option{{ID: "45", Name: "中国 (CN)"}, {ID: "244", Name: "美国 (US)"}},
 	}
 	if Kind == "darwin" {
 		catalog = core.Catalog{
 			Timezones: []core.Option{{ID: "Asia/Shanghai", Name: "(UTC+08:00) Asia/Shanghai"}},
-			Cultures:  []core.Option{{ID: "zh_CN", Name: "中文（中国） / zh_CN"}},
+			Cultures:  []core.Option{{ID: "zh_CN", Name: cultureName("zh_CN")}},
 			Regions:   []core.Option{{ID: "CN", Name: "中国 (CN)"}},
 		}
 	}
 	for _, preset := range core.Presets(core.Catalog{}, Kind) {
 		catalog.Timezones = append(catalog.Timezones, core.Option{ID: preset.Target.Timezone, Name: preset.Name + " / " + preset.Target.Timezone})
-		catalog.Cultures = append(catalog.Cultures, core.Option{ID: preset.Target.Culture, Name: preset.Target.Culture})
+		catalog.Cultures = append(catalog.Cultures, core.Option{ID: preset.Target.Culture, Name: cultureName(preset.Target.Culture)})
 		catalog.Regions = append(catalog.Regions, core.Option{ID: preset.Target.Region, Name: preset.Name + " (" + preset.Country + ")"})
 	}
 	dedup := func(options []core.Option) []core.Option {

@@ -3,10 +3,12 @@ package main
 import (
 	"claudepro/internal/core"
 	"claudepro/internal/platform"
+	"context"
 	"errors"
 	"os"
 	"path/filepath"
 	"sync"
+	"time"
 )
 
 type Host interface {
@@ -17,12 +19,22 @@ type Host interface {
 	LaunchDesktop(string, string) error
 }
 type State struct {
-	View     core.View   `json:"view"`
-	Config   core.Config `json:"config"`
-	DataDir  string      `json:"dataDir"`
-	Demo     bool        `json:"demo"`
-	Warning  string      `json:"warning"`
-	Platform string      `json:"platform"`
+	View               core.View   `json:"view"`
+	Config             core.Config `json:"config"`
+	DataDir            string      `json:"dataDir"`
+	Demo               bool        `json:"demo"`
+	Warning            string      `json:"warning"`
+	Platform           string      `json:"platform"`
+	AppVersion         string      `json:"appVersion"`
+	AllowUpdateInstall bool        `json:"allowUpdateInstall"`
+}
+type UpdateInfo struct {
+	Version      string `json:"version"`
+	Name         string `json:"name"`
+	Notes        string `json:"notes"`
+	Filename     string `json:"filename"`
+	Size         int64  `json:"size"`
+	AllowInstall bool   `json:"allowInstall"`
 }
 type Service struct {
 	op           sync.Mutex
@@ -33,6 +45,7 @@ type Service struct {
 	dir          string
 	demo         bool
 	quit         func()
+	updater      appUpdater
 }
 
 func newService(host Host, dir string, demo bool, notify func(string)) *Service {
@@ -66,9 +79,68 @@ func (s *Service) GetState() (State, error) {
 	if err != nil && v.Journal != nil {
 		// A damaged preferences file must never hide a valid recovery journal.
 		c = core.Config{Version: 1, Target: v.Journal.Target}
-		return State{View: v, Config: c, DataDir: s.dir, Demo: s.demo, Platform: platform.Kind, Warning: "设置文件损坏，但恢复记录仍可读取。若有未完成操作，请先恢复原环境，再修复 config.json：" + err.Error()}, nil
+		return State{View: v, Config: c, DataDir: s.dir, Demo: s.demo, Platform: platform.Kind, AppVersion: appVersion, AllowUpdateInstall: s.canInstallUpdate(), Warning: "设置文件损坏，但恢复记录仍可读取。若有未完成操作，请先恢复原环境，再修复 config.json：" + err.Error()}, nil
 	}
-	return State{View: v, Config: c, DataDir: s.dir, Demo: s.demo, Platform: platform.Kind}, err
+	return State{View: v, Config: c, DataDir: s.dir, Demo: s.demo, Platform: platform.Kind, AppVersion: appVersion, AllowUpdateInstall: s.canInstallUpdate()}, err
+}
+func (s *Service) canInstallUpdate() bool {
+	return allowUpdateInstall && !s.demo && s.updater != nil
+}
+func (s *Service) CheckUpdate() (*UpdateInfo, error) {
+	if s.demo {
+		return nil, errors.New("模拟模式不检查更新")
+	}
+	if s.updater == nil {
+		return nil, errors.New("更新服务未启用")
+	}
+	rel, err := checkRelease(s.updater, 8*time.Second)
+	if err != nil {
+		return nil, err
+	}
+	return updateInfoFrom(rel, s.canInstallUpdate()), nil
+}
+func (s *Service) InstallUpdate() error {
+	if err := s.updateGuard("安装更新"); err != nil {
+		return err
+	}
+	if !allowUpdateInstall {
+		return errors.New("开发构建不能替换当前程序，请到 GitHub Releases 下载新版本")
+	}
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Minute)
+	defer cancel()
+	return s.updater.DownloadAndInstall(ctx)
+}
+func (s *Service) RestartUpdate() error {
+	if err := s.updateGuard("重启"); err != nil {
+		return err
+	}
+	if !allowUpdateInstall {
+		return errors.New("开发构建不能替换当前程序，请到 GitHub Releases 下载新版本")
+	}
+	return s.updater.Restart(context.Background())
+}
+func (s *Service) updateGuard(action string) error {
+	if s.demo {
+		return errors.New("模拟模式不能安装更新")
+	}
+	if s.updater == nil {
+		return errors.New("更新服务未启用")
+	}
+	if !s.op.TryLock() {
+		return errors.New("正在操作环境，请完成后再" + action)
+	}
+	s.op.Unlock()
+	return nil
+}
+func (s *Service) SkipUpdate(version string) error {
+	if s.updater == nil {
+		return errors.New("更新服务未启用")
+	}
+	if version == "" {
+		return errors.New("缺少版本号")
+	}
+	s.updater.SkipVersion(version)
+	return nil
 }
 func (s *Service) GetCatalog() (core.Catalog, error) { return s.host.Catalog() }
 func (s *Service) GetClients() (core.Clients, error) { return s.host.Discover() }

@@ -22,12 +22,39 @@ tasks:
       - package.json
       - package-lock.json
     generates:
-      - node_modules
+      # Fingerprint a single file. The node_modules directory itself churns and
+      # is not a stable up-to-date signal; darwin:common vs common also keep
+      # separate checksums, so a directory generate made every wails3 dev run
+      # npm ci twice and lost the 5s frontend wait.
+      - node_modules/.package-lock.json
     preconditions:
       - sh: npm version
         msg: "Looks like npm isn't installed. Npm is part of the Node installer: https://nodejs.org/en/download/"
     cmds:
       - npm ci
+
+  wait:devserver:
+    summary: Wait until the Vite dev server is reachable before launching the app
+    internal: true
+    cmds:
+      - |
+        set -euo pipefail
+        url="${FRONTEND_DEVSERVER_URL:-}"
+        if [ -z "${url}" ]; then
+          exit 0
+        fi
+        echo "Waiting for frontend dev server: ${url}"
+        i=0
+        while [ "${i}" -lt 90 ]; do
+          if curl -sf --max-time 1 "${url}" >/dev/null; then
+            echo "Frontend dev server is ready"
+            exit 0
+          fi
+          i=$((i + 1))
+          sleep 0.5
+        done
+        echo "Frontend dev server did not become ready: ${url}" >&2
+        exit 1
 
   install:frontend:deps:bun:
     dir: frontend

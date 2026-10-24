@@ -6,12 +6,15 @@ import {Home} from './components/Home';
 import {Diagnostics} from './components/Diagnostics';
 import {History} from './components/History';
 import {SettingsDialog} from './components/SettingsDialog';
+import {UpdateDialog} from './components/UpdateDialog';
 import {labels, useEnvironment} from './useEnvironment';
+import {useUpdate} from './useUpdate';
 import {systemName} from './platform';
 import './style.css';
 
 export default function App() {
   const m=useEnvironment();
+  const u=useUpdate(m.state?.demo, m.state?.allowUpdateInstall, m.busy);
   const restoreButton=useRef<HTMLButtonElement>(null);
   const dismissExit=useRef<HTMLButtonElement>(null);
   // MiGate's footer is portalled after the popup mounts. Focus the safe action
@@ -30,7 +33,8 @@ export default function App() {
     </div>}
     {!m.state&&m.tab!=='diagnostics'&&<Card><PageState kind={m.loading?'loading':'error'} title={m.loading?'正在读取本机环境…':'无法读取状态'} detail={m.loading?'检查系统设置和恢复记录。':'为保护原配置，修改功能已停用。请查看错误或刷新重试。'}/></Card>}
     {m.tab==='diagnostics'?<Diagnostics m={m}/>:m.state&&(m.tab==='home'?<Home m={m} restoreButton={restoreButton}/>:<History m={m}/>)}
-    <SettingsDialog m={m}/>
+    <SettingsDialog m={m} onCheckUpdate={u.check} checkingUpdate={u.checking}/>
+    <UpdateDialog u={u} current={m.state?.appVersion}/>
     <Dialog open={m.exit&&m.conflicts.length===0} onOpenChange={open=>{if(!m.busy)m.setExit(open);}}>
       <DialogContent size="md" showCloseButton={!m.busy} initialFocus={dismissExit}>
         <DialogTitle>环境尚未恢复</DialogTitle><DialogDescription>退出只关闭 ClaudePro，当前 {systemName()} 设置会继续生效。恢复记录保存在本机，下次启动可继续恢复。</DialogDescription>

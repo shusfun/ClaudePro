@@ -10,5 +10,6 @@ export type {
     Check,
     LocalReport,
     NetworkReport,
-    State
+    State,
+    UpdateInfo
 } from "./models.js";

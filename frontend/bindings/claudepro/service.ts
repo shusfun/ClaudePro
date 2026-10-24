@@ -13,6 +13,10 @@ import * as core$0 from "./internal/core/models.js";
 // @ts-ignore: Unused imports
 import * as $models from "./models.js";
 
+export function CheckUpdate(): $CancellablePromise<$models.UpdateInfo | null> {
+    return $Call.ByID(1914844742);
+}
+
 export function ConfirmExit(): $CancellablePromise<void> {
     return $Call.ByID(3553697919);
 }
@@ -41,8 +45,16 @@ export function GetState(): $CancellablePromise<$models.State> {
     return $Call.ByID(1244899848);
 }
 
+export function InstallUpdate(): $CancellablePromise<void> {
+    return $Call.ByID(818344625);
+}
+
 export function Launch(client: string): $CancellablePromise<void> {
     return $Call.ByID(1184620374, client);
+}
+
+export function RestartUpdate(): $CancellablePromise<void> {
+    return $Call.ByID(300772317);
 }
 
 export function Restore(choices: { [_ in string]?: core$0.Choice } | null): $CancellablePromise<void> {
@@ -51,6 +63,10 @@ export function Restore(choices: { [_ in string]?: core$0.Choice } | null): $Can
 
 export function SaveConfig(c: core$0.Config): $CancellablePromise<void> {
     return $Call.ByID(3855370806, c);
+}
+
+export function SkipUpdate(version: string): $CancellablePromise<void> {
+    return $Call.ByID(1152682603, version);
 }
 
 export function Switch(): $CancellablePromise<void> {

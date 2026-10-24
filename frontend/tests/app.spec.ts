@@ -6,8 +6,8 @@ const catalog={timezones:[{id:'China Standard Time',name:'(UTC+08:00) 北京'},{
 
 async function mockHost(page:Page,configured=true,longCatalog=false){
  const jsErrors:string[]=[];page.on('pageerror',e=>jsErrors.push(e.message));
- const state:any={view:{current:structuredClone(original),journal:null,conflicts:[]},config:{version:1,target:configured?{...target}:{timezone:'',culture:'',region:''},cliPath:'',desktopPath:'',workDir:'C:\\开发项目'},dataDir:'C:\\Users\\测试用户\\AppData\\Local\\ClaudePro',demo:false,warning:''};
- const ctl={networkData:{country:'日本',countryCode:'JP',city:'Tokyo',region:'Tokyo',timezone:'Asia/Tokyo',recommendedPreset:'japan',recommendationReason:'出口国家为日本，推荐日本模板。'},switchCalls:0,networkCalls:0,networkFail:false,holdNetwork:null as Promise<void>|null,failSwitch:false,failRead:false,restoreCalls:0,launchCalls:[] as string[],holdRestore:null as Promise<void>|null,choices:null as any};
+ const state:any={view:{current:structuredClone(original),journal:null,conflicts:[]},config:{version:1,target:configured?{...target}:{timezone:'',culture:'',region:''},cliPath:'',desktopPath:'',workDir:'C:\\开发项目'},dataDir:'C:\\Users\\测试用户\\AppData\\Local\\ClaudePro',demo:false,warning:'',appVersion:'0.1.0',allowUpdateInstall:true};
+ const ctl={networkData:{country:'日本',countryCode:'JP',city:'Tokyo',region:'Tokyo',timezone:'Asia/Tokyo',recommendedPreset:'japan',recommendationReason:'出口国家为日本，推荐日本模板。'},switchCalls:0,networkCalls:0,networkFail:false,holdNetwork:null as Promise<void>|null,failSwitch:false,failRead:false,restoreCalls:0,launchCalls:[] as string[],holdRestore:null as Promise<void>|null,choices:null as any,update:null as any,skip:'',installCalls:0};
  const options=structuredClone(catalog);
  options.timezones.push({id:'Pacific Standard Time',name:'(UTC-08:00) 美国西部'},{id:'W. Europe Standard Time',name:'欧洲中部'},{id:'Singapore Standard Time',name:'新加坡'},{id:'Tokyo Standard Time',name:'(UTC+09:00) 大阪、东京'});options.cultures.push({id:'de-DE',name:'德语 / de-DE'},{id:'en-SG',name:'英语 / en-SG'},{id:'ja-JP',name:'日语（日本） / ja-JP'});options.regions.push({id:'94',name:'德国 (DE)'},{id:'215',name:'新加坡 (SG)'},{id:'122',name:'日本 (JP)'});
  if(longCatalog)options.cultures.push(...Array.from({length:603},(_,i)=>({id:'test-'+i,name:'测试区域格式 '+String(i).padStart(3,'0')})));
@@ -44,6 +44,9 @@ async function mockHost(page:Page,configured=true,longCatalog=false){
     ctl.restoreCalls++;ctl.choices=args[0];if(ctl.holdRestore)await ctl.holdRestore;
     state.view.current=structuredClone(original);if(args[0]?.culture?.action==='keep')state.view.current.culture=state.view.conflicts[0].current;state.view.conflicts=[];state.view.journal.status='restored';break;
    case 1184620374:ctl.launchCalls.push(args[0]);if(args[0]==='cli'){await fail('未找到 Claude CLI，请在设置中指定路径');return;}break;
+   case 1914844742:data=ctl.update;break;
+   case 818344625:ctl.installCalls++;break;
+   case 1152682603:ctl.skip=args[0];break;
   }
   await route.fulfill({json:data});
  });
@@ -294,3 +297,20 @@ test('multi-source fallback shows provenance, cooldown blocks repeated calls, co
  await page.screenshot({animations:'disabled',path:'../test-results/ui/network-conflict-compact.png',fullPage:true});
  expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBeTruthy();
 });
+
+test('update dialog appears, can be postponed, then skipped',async({page})=>{
+ const {ctl}=await mockHost(page);
+ ctl.update={version:'0.2.0',name:'ClaudePro',notes:'修复更新检查',filename:'claudepro.exe',size:12000000,allowInstall:true};
+ await page.goto('/');
+ await expect(page.getByText('发现新版本',{exact:true})).toBeVisible();
+ await expect(page.getByText('claudepro.exe',{exact:false})).toBeVisible();
+ await page.getByRole('button',{name:'稍后提醒',exact:true}).click();
+ await expect(page.getByText('发现新版本',{exact:true})).toHaveCount(0);
+ await page.getByRole('button',{name:'客户端设置'}).click();
+ await page.getByRole('button',{name:'检查更新',exact:true}).click();
+ await expect(page.getByText('发现新版本',{exact:true})).toBeVisible();
+ await page.getByRole('button',{name:'跳过此版本',exact:true}).click();
+ await expect(page.getByText('发现新版本',{exact:true})).toHaveCount(0);
+ expect(ctl.skip).toBe('0.2.0');
+});
+

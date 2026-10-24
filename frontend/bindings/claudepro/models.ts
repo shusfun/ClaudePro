@@ -47,4 +47,15 @@ export interface State {
     "demo": boolean;
     "warning": string;
     "platform": string;
+    "appVersion": string;
+    "allowUpdateInstall": boolean;
+}
+
+export interface UpdateInfo {
+    "version": string;
+    "name": string;
+    "notes": string;
+    "filename": string;
+    "size": number;
+    "allowInstall": boolean;
 }

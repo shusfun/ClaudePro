@@ -81,6 +81,9 @@ func main() {
 		return
 	}
 	svc.quit = func() { allowExit.Store(true); app.Quit() }
+	if !demo {
+		svc.updater = setupUpdater(app)
+	}
 	title := "ClaudePro"
 	if demo {
 		title += " [模拟模式]"

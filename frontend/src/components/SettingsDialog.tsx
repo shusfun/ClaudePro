@@ -6,7 +6,7 @@ import {isMac} from '../platform';
 
 const keys=['workDir','cliPath','desktopPath'] as const;
 
-export function SettingsDialog({m}:{m:EnvironmentModel}) {
+export function SettingsDialog({m,onCheckUpdate,checkingUpdate}:{m:EnvironmentModel;onCheckUpdate:()=>void;checkingUpdate:boolean}) {
   const mac=isMac();
   const saved=m.state?.config;
   const [paths,setPaths]=useState<ClientPaths>({workDir:'',cliPath:'',desktopPath:''});
@@ -26,6 +26,7 @@ export function SettingsDialog({m}:{m:EnvironmentModel}) {
         <Button variant="outline" disabled={m.busy} aria-label={meta[f].browse} onClick={async()=>{const path=await m.browse(f);if(path)setPaths(p=>({...p,[f]:path}));}}><FolderOpen/>浏览</Button>
       </div></Field>)}</div>
       <DialogFooter>
+        {!m.state?.demo&&<Button variant="outline" disabled={m.busy||checkingUpdate} onClick={onCheckUpdate}>{checkingUpdate?'正在检查…':'检查更新'}</Button>}
         <Button variant="outline" disabled={m.busy} onClick={()=>m.setSettingsOpen(false)}>取消</Button>
         <Button disabled={m.busy||!paths.workDir} onClick={()=>m.save(paths)}><Save/>保存设置</Button>
       </DialogFooter>
