@@ -1,0 +1,68 @@
+<!doctype html>
+<html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>ClaudePro · 使用与恢复指南</title>
+<style>
+:root{font-family:"Segoe UI","Microsoft YaHei",sans-serif;color:#273b35;background:#f4f7f5;line-height:1.8}*{box-sizing:border-box}body{max-width:1080px;margin:auto;padding:36px 24px 80px}header{padding:36px;border-radius:20px;background:#166b61;color:white}header small{letter-spacing:2px;color:#bddbd1}h1{font-size:32px;margin:12px 0}h2{font-size:21px;margin:0 0 16px}h3{font-size:16px;margin:24px 0 8px}p{margin:10px 0}nav{display:flex;gap:18px;flex-wrap:wrap;padding:20px 4px}a{color:#16756a}section{background:white;border:1px solid #e0e8e3;border-radius:14px;padding:28px 32px;margin:18px 0}code,pre{font-family:Consolas,monospace;background:#f0f5f2;overflow-wrap:anywhere}code{padding:2px 5px;border-radius:4px}pre{padding:18px;border-radius:8px;white-space:pre-wrap;font-size:13px}table{width:100%;border-collapse:collapse;font-size:14px}th,td{text-align:left;padding:12px;border-bottom:1px solid #e5ece7;vertical-align:top}th{background:#f4f7f5}.note{padding:14px 18px;border-left:4px solid #ba8d3c;background:#fff9eb;margin:18px 0}li{margin:8px 0}footer{color:#789084;font-size:13px;padding:20px 4px}@media(max-width:650px){body{padding:16px}section,header{padding:22px}table{font-size:12px}th,td{padding:8px}}@media print{body{background:white;padding:0}section{break-inside:avoid}nav{display:none}}
+</style></head><body>
+<header><small>CLAUDEPRO / WINDOWS ENVIRONMENT SWITCHER</small><h1>切换环境，随时回到原点。</h1><p>Windows x64 · 版本 0.1.0 · Wails 3</p><p>保存真实原值，逐项验证，手动还原。支持 Claude Code CLI 与 Claude Desktop。</p></header>
+<nav><a href="#start">开始使用</a><a href="#detection">环境检测</a><a href="#scope">修改范围</a><a href="#restore">恢复与冲突</a><a href="#clients">客户端</a><a href="#failure">故障处理</a><a href="#build">构建验证</a></nav>
+<section id="start"><h2>选择地区模板，预览后切换</h2><ol>
+<li>双击项目 <code>bin\claudepro.exe</code>。以普通用户身份运行界面；修改系统时区时才出现 UAC。</li>
+<li>首页选择美国西部、美国东部、英国、德国、日本或新加坡模板，一次配齐时区、区域格式和国家地区。选择只影响预览，不修改 Windows；点击“切换环境”时才保存目标并执行，无需额外保存。模板缺少本机 Windows 必需选项时会禁用并显示原因。</li>
+<li>保存工作并关闭 Claude CLI 和 Desktop 会话。检查首页当前值、目标值与差异，点击“切换环境”。若检测到进程，关闭后重新点击，应用会再次检查。</li>
+<li>成功后自行选择“启动 CLI”或“启动 Desktop”。不会自动启动或强制结束现有进程。</li>
+<li>结束工作并关闭 Claude 后，点击“恢复原环境”。退出 ClaudePro 不会自动恢复 Windows 设置。</li></ol>
+<h3>界面与主题</h3><p>界面采用 MiGate 的蓝色拟物组件。顶部主题按钮循环切换浅色、深色、跟随系统，默认跟随系统，并记住你的选择。左侧“收起导航”保留图标导航；窄窗口改用顶部菜单打开导航抽屉。主题与折叠状态仅保存在 ClaudePro 的本地界面存储，不修改 Windows 主题。</p>
+<p>“自定义区域设置”展开可搜索的选择器，支持显示名称、代码及 Windows 时区 ID 搜索，忽略大小写。使用方向键和 Enter 选择，Escape 关闭；输入搜索词不会改变已选值。首页与设置页共享草稿，切换页面不会丢失，关闭应用前尚未保存的草稿不会持久化。客户端路径和工作目录仍在设置页保存；首页切换只保存目标，不保存未提交的客户端路径。弹窗限制焦点在内部，关闭后返回入口；退出提醒默认聚焦“留在应用”。恢复冲突必须逐项选择，提交期间不能关闭弹窗或重复提交。成功结果短暂提示，错误与恢复警告持续显示。</p>
+<div class="note">这些是系统全局或当前用户设置，也会影响其他应用。区域切换不等于 IP、账号地区或设备指纹切换，不构成避免封禁的保证。</div>
+<p>先体验操作：运行 <code>.\bin\claudepro.exe --demo</code>。模拟模式使用独立文件，不修改 Windows，也不启动真实 Claude；检测使用固定模拟数据，不查询网络。</p></section>
+<section id="detection"><h2>本机检查与手动网络检测</h2>
+<p>首页显示检测摘要；侧栏“环境检测”展示三项实际设置与所选目标的差异、客户端是否可用、正在运行的 Claude 会话、恢复记录和配置冲突。启动、刷新、切换及恢复后自动更新，每次显示检测时间。目标尚未应用导致的差异只记为信息，不判为故障。</p>
+<p>只读显示当前用户 Internet Settings 的手动代理启用状态、PAC 是否配置，以及代理环境变量是否存在；不展示代理地址、密码或令牌。这些配置提示不代表 Claude 最终使用的路由。</p>
+<h3>根据出口推荐地区模板</h3><p>首页模板上方点击“检测并推荐地区”，展示出口 IP、城市、州 / 省和 IANA 地理时区。美国的 <code>America/Los_Angeles</code> 推荐“美国西部”，<code>America/New_York</code> 及明确的东部时区别名推荐“美国东部”。按地理时区判断，不按会随夏令时变化的 UTC 偏移判断。</p><p>检测到美国中部、山地、阿拉斯加、夏威夷等时区，或服务未返回时区时，不强行猜测美东 / 美西，提示自定义。英国、德国、日本、新加坡按国家匹配现有模板，其他国家提示自定义。</p><p>“采用推荐”只填充目标预览，不保存配置、不修改系统；点击“切换环境”才执行。有未恢复记录时仍禁止更换目标。本机缺少必需选项时不能采用该模板。结果显示来源和时间，更换代理后待短时缓存到期，再点击“重新检测并推荐”。两个来源的出口 IP、国家或美东 / 美西模板判断冲突时，停止推荐并显示来源详情；单源可用时注明未交叉确认。城市不同但时区与模板判断相同，不算模板冲突。IP 定位是近似结果，不能说明人的实际位置或 Claude 请求必然使用的出口。</p><h3>检测网络出口</h3><p>点击按钮才向 GeoJS、ipwho.is、ipinfo、ipapi 的 HTTPS 接口发起请求，服务会接收到本次请求的出口 IP。采用有限并发、错峰查询和失败回退，优先使用前面的来源；收集两份可用结果后取消其他请求。展示 IP、国家地区、ASN、运营商、数据来源、检测时间和代理模式，并与选定目标国家比较。</p>
+<p>网络请求采用 Go 的环境变量代理规则（HTTPS_PROXY / HTTP_PROXY / NO_PROXY 及对应小写形式）；ALL_PROXY 仅显示配置存在性，不作为 Go 默认 HTTP 请求的代理。不会自动模拟 Windows PAC 或 Claude 专属代理。检测出口可能不同于 Claude 经代理分流后的出口。</p>
+<p>整体最多 10 秒，单源最多 4 秒；429 自动跳过并按 Retry-After 退避（未提供时默认 5 分钟），其他来源继续检测。IP 和国家有效即可展示，缺少 ASN / 运营商显示“未知”。只有所有来源均不可用才显示失败。成功结果缓存 60 秒，失败冷却 30 秒，按钮显示剩余时间，期间不重复发请求。没有后台轮询，结果不写入文件，仅保留在当前会话。修改代理后应重新检测；界面会保留上次结果的时间。</p>
+<p>页面提供 <a href="https://checkcc.org">check-cc</a> 与 <a href="https://ipcheck.ing">MyIP</a> 外部入口，在默认浏览器打开。浏览器语言、WebRTC 和指纹结果只说明该浏览器环境，不能直接代表 CLI 或 Desktop。</p>
+<div class="note">检测提供事实和差异，不生成封号风险分；国家一致不意味着账号安全或符合服务地区资格。原有代理、DNS、IPv6、凭据和设备标识均不修改。</div>
+</section>
+<section id="scope"><h2>实际修改项</h2><table><thead><tr><th>项目</th><th>范围和操作</th><th>恢复依据</th></tr></thead><tbody>
+<tr><td>系统时区</td><td>系统全局。独立 UAC 辅助进程验证 Windows 时区 ID，再调用 tzutil。</td><td>实际时区 ID，包括原有的 <code>_dstoff</code> 后缀。</td></tr>
+<tr><td>区域格式</td><td>当前用户，Set-Culture。</td><td><code>HKCU\Control Panel\International</code> 直接字符串值快照，包含自定义日期、数字、货币等。</td></tr>
+<tr><td>国家地区</td><td>当前用户，Set-WinHomeLocation。</td><td><code>HKCU\Control Panel\International\Geo</code> 直接字符串值快照。</td></tr></tbody></table>
+<p>不修改显示语言、输入法、首选语言列表、代理、IPv6、DNS、账号凭据、设备 ID 或浏览器指纹。恢复后通知 Windows 设置变化；其他应用可能仍需重启。</p>
+<p>已与目标相同的项目不重写，保留自定义格式。恢复只处理本次实际进入修改流程的项目。</p></section>
+<section id="restore"><h2>备份、还原与冲突</h2><p>正式数据：<code>%LOCALAPPDATA%\ClaudePro</code>；模拟数据：<code>%LOCALAPPDATA%\ClaudePro-Demo</code>。</p>
+<table><tr><th>文件</th><th>用途</th></tr><tr><td><code>config.json</code></td><td>目标环境、工作目录、手动客户端路径。</td></tr><tr><td><code>journal.json</code></td><td>当前或最近一次原始值、目标值、步骤意图、回读值、状态、日志。</td></tr><tr><td><code>history\*.json</code></td><td>开始下一次切换时归档旧记录。恢复成功后当前日志仍保留。</td></tr></table>
+<p>采用版本化 JSON、临时文件、刷新落盘和原子替换。切换顺序：<strong>时区 → 区域格式 → 国家地区</strong>；恢复顺序相反。每步写入前记录意图，写入后回读。</p>
+<p>任何步骤失败会尝试逆序回滚。备份无法写入、回读失败、恢复权限被取消或结果不明时，停止并保留恢复记录。恢复时比较原始值、本工具最后回读值与当前值，外部变化或未验证写入会显示冲突：</p>
+<ul><li><strong>恢复原始值：</strong>明确授权恢复该项目的备份值。</li><li><strong>保留当前值：</strong>不覆盖外部修改，日志记录主动放弃此项还原。“恢复流程完成”不表示保留项目也回到了原值。</li><li>对话框打开后配置再次变化，旧选择失效，需要重新检查。</li></ul>
+<p>存在未恢复记录时，禁止新切换和目标变更，重复点击不会覆盖原始备份。退出时提示一次，保留环境退出后，下次打开可继续恢复。</p></section>
+<section id="clients"><h2>客户端发现与启动</h2>
+<p><strong>CLI：</strong>用户 PATH 中发现 <code>claude.exe</code> 或 npm <code>claude.cmd</code> / <code>claude.ps1</code>。设置支持浏览文件和工作目录。启动可见的新 PowerShell 终端，沿用现有环境变量和凭据，不修改登录信息。</p>
+<p><strong>Desktop：</strong>优先从 Claude MSIX 包清单读取应用 ID，通过 Windows AppsFolder 激活。普通安装检测常见本地路径，也可浏览选择 EXE。已有普通安装窗口时只请求激活；仅有后台进程而没有窗口时，提示从托盘打开，不重复创建进程。</p>
+<p>MSIX 建议将手动路径留空。手动路径必须为现存绝对路径，空格和中文路径作为结构化数据传递。启动客户端保持普通权限。</p>
+<p>切换或恢复前关闭全部 Claude 会话，包含托盘中的 Desktop。Windows 可能限制抢焦点，可从任务栏切换窗口。工具不会强制结束进程。</p></section>
+<section id="failure"><h2>故障处理</h2>
+<h3>UAC 取消、执行失败或应用中断</h3><p>重新打开应用并“刷新状态”。显示“需要恢复”时，关闭 Claude 后点击“恢复原环境”。未验证写入将显示为冲突供你选择。不要清理日志或通过删除备份来解除切换限制。</p>
+<h3>备份损坏</h3><p>应用停止修改并保留损坏文件。先复制整个数据目录，再检查 journal.json、残留 .pending-* 和自己的备份副本。历史文件属于之前的切换，不能直接当作本次原值。原始数据无法找回时无法保证精确还原；请使用自己的系统备份或按核实过的原值人工调整。</p>
+<h3>仅 config.json 损坏</h3><p>有效 journal.json 仍提供恢复入口。先完成恢复，关闭应用后备份并重命名损坏的 config.json，再重新配置目标。不要删除 journal.json。</p>
+<h3>人工核对</h3><p><code>tzutil /g</code> 查看时区；Windows“时间和语言 → 语言和区域”核对地区及区域格式。精确的自定义格式位于日志 <code>original.culture.data</code>，对应 International 注册表直接值；<code>original.region.data</code> 对应 Geo。人工修复前保留副本，不套用其他机器的注册表。</p>
+<h3>无法打开界面</h3><p>缺少可用 WebView2 时会出现中文提示。安装 <a href="https://developer.microsoft.com/microsoft-edge/webview2/">Microsoft Edge WebView2 Evergreen Runtime</a> 后重试。EXE 为未签名便携版。网络检测无法连接时，可以直接使用本机检查及切换恢复功能。系统策略禁止 PowerShell、注册表写入或 UAC 时会报告错误，按本机管理策略处理。</p>
+<h3>只读诊断</h3><pre>Start-Process .\bin\claudepro.exe -ArgumentList '--diagnose' -WindowStyle Hidden -Wait -RedirectStandardOutput .\bin\diagnose.json</pre><p>诊断包括实际环境、支持选项、客户端路径和运行进程，不写入设置。分享前可自行移除用户名及个人路径。</p></section>
+<section id="build"><h2>构建与验证</h2><p>Windows x64、Go 1.25.0+、Node.js 22.18.0+、npm、WebView2。Wails 和 Go/npm 依赖固定版本；前端 runtime alpha.97 为该 Wails 版本的配套包版本。前端采用 React 19.3.1、Base UI 1.9.0、Tailwind CSS 4.3.3；MiGate 组件和五份基础样式已复制为项目内源码，构建不依赖 MiGate 目录，来源记录和许可证保存在 frontend/src/components/ui。</p>
+<pre>go install github.com/wailsapp/wails/v3/cmd/wails3@v3.0.0-alpha2.117
+npm --prefix frontend ci
+# 首次克隆：先生成 main.go 所嵌入的前端资源
+npm --prefix frontend run build
+wails3 build ARCH=amd64
+
+go test ./...
+go vet ./...
+npm --prefix frontend run typecheck
+npm --prefix frontend run build
+Push-Location frontend
+npx playwright test
+Pop-Location</pre>
+<p>输出 bin\claudepro.exe。Playwright 使用本机 Edge。<code>wails3 dev</code> 默认使用真实适配器，安全演示请运行 EXE 的 <code>--demo</code> 模式。</p>
+<div class="note">已完成模拟测试、前端流程测试、生产构建及本机只读检测。没有对当前电脑修改系统设置。真实 UAC、系统切换和恢复、客户端重启后的实际行为，以及无 WebView2 环境仍需独立 Windows 测试环境验收。</div>
+<p>详见 <a href="validation.md">验证记录与虚拟机验收步骤</a>。本工具不是账号风控检测器。</p></section>
+<footer>ClaudePro · 本地备份 / 逐项验证 / 手动还原 · 2026-10-24<br><a href="claude-ban-fingerprint-research.html">既有调研文档</a></footer></body></html>

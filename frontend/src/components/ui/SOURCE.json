@@ -1,0 +1,84 @@
+{
+  "project": "MiGate",
+  "sourceCommit": "b505c761a5e28279c24c986626c0d1b0427dfdd7",
+  "source": "current working tree, 2026-10-24",
+  "components": {
+    "cn": {
+      "source": "packages/ui/src/cn.ts",
+      "sha256": "c4afe23db29651dec75ca5a3098a8bafe35f78cd45d4773d1db1c8001e640623"
+    },
+    "menu-toggle": {
+      "source": "packages/ui/src/menu-toggle.tsx",
+      "sha256": "a8a75e7386a6decca6e7e70af0d0625f009f3015dd1741bd1472b5e61c50feff"
+    },
+    "lamp": {
+      "source": "packages/ui/src/lamp.tsx",
+      "sha256": "53d3490bf6155bdc082acc9b6bcbbbd0d70f6d0d80a1d356758b4b407d136e99"
+    },
+    "toast": {
+      "source": "packages/ui/src/toast.tsx",
+      "sha256": "e3a537b2c219425d83147da50b6f5caa7333791af29d7fad8945db46c6fae796"
+    },
+    "check-mark": {
+      "source": "packages/ui/src/check-mark.tsx",
+      "sha256": "832425d0ff8cb2ddc58e431af19c3b9b1eca4f469dd3cebe77ee55a1e6fdac28"
+    },
+    "page": {
+      "source": "packages/ui/src/page.tsx",
+      "sha256": "eed4695b6ba97cb41e6a16d2b0e1d3ecde7f5459c23edf0c8f50c18f2e7efa54"
+    },
+    "button": {
+      "source": "packages/ui/src/button.tsx",
+      "sha256": "69b7307d62a3b820341129523d48d54d2bb9c01aaa5f0282ffe79955ab19cbd2"
+    },
+    "ripple": {
+      "source": "packages/ui/src/ripple.tsx",
+      "sha256": "d1f885461b76d025dcda7b0b1172aed9108bf23b400b2336b0808019358a4012"
+    },
+    "motion": {
+      "source": "packages/ui/src/motion.ts",
+      "sha256": "faa63dcacc12757956875a59adb7f9cb2ebec27e6266d2434b6db3de50ef6eca"
+    },
+    "overlay": {
+      "source": "packages/ui/src/overlay.tsx",
+      "sha256": "a4568321c3a47da899591ed74df2677f2c0b2e9158e0954a1f8aae9235a688db"
+    },
+    "dialog": {
+      "source": "packages/ui/src/dialog.tsx",
+      "sha256": "492f5fad100421cd19c0e0383af83cd9795fd59d533601d4aeb1789e6b169628"
+    },
+    "select": {
+      "source": "packages/ui/src/select.tsx",
+      "sha256": "0772da4ef747dfc40e13f308d878a3e24a48585020ff8b47a21f6a956653a1d8"
+    },
+    "field": {
+      "source": "packages/ui/src/field.tsx",
+      "sha256": "9cd9b205622853f7cf9af36a0e2848ee2f20c4b80e0fb4d703488a1bd112199a"
+    },
+    "label": {
+      "source": "packages/ui/src/label.tsx",
+      "sha256": "0fe6b2d92a715639a3028d0e842fc89342360afd92fe6a63a483b452388eb662"
+    },
+    "badge": {
+      "source": "packages/ui/src/badge.tsx",
+      "sha256": "446b8aebed0bba450a73d9375627dd1bce7dd941dcbf0e66d313ba760b8b8696"
+    },
+    "table": {
+      "source": "packages/ui/src/table.tsx",
+      "sha256": "e7f910899995a826b6cdf63fda26eee4d886b84c08f1260c45fb6f7c5ea0b7f9"
+    },
+    "card": {
+      "source": "packages/ui/src/card.tsx",
+      "sha256": "77783ff1e17bbf18a0e51e0d9ebb741549426997d83acdfe02474d322fa2eb8c"
+    },
+    "input": {
+      "source": "packages/ui/src/input.tsx",
+      "sha256": "9b7e2dd2e09abb0afe997ef0fced13ca36d1be4d785f817aae09fec762c87d26"
+    },
+    "notice": {
+      "source": "packages/ui/src/notice.tsx",
+      "sha256": "0dc7c926bae834d686046946b1711ec7d230a97faf432c9b26c3c34018b3ef5e"
+    }
+  },
+  "styles": "packages/ui/src/styles/{tokens,theme,instruments,controls,motion}.css"
+}

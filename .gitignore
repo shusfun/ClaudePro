@@ -1,0 +1,29 @@
+.task
+.wails-scaffold/
+*.syso
+test-results/
+playwright-report/
+bin
+frontend/dist
+frontend/node_modules
+build/linux/appimage/build
+build/windows/nsis/MicrosoftEdgeWebview2Setup.exe
+# Mobile generated (per-machine; overlays hold absolute paths)
+build/ios/xcode/overlay.json
+build/ios/xcode/gen/
+build/android/overlay.json
+build/android/gen/
+# Local research snapshots and machine evidence are not redistributed.
+research/sources/
+research/*_log.jsonl
+.env
+.env.*
+!.env.example
+*.log
+# Unused starter-page assets retained locally, not part of the app source.
+frontend/public/bg-desktop.jpg
+frontend/public/bg-mobile.jpg
+frontend/public/Inter-Medium.ttf
+frontend/public/react.svg
+frontend/public/style.css
+frontend/public/wails.png

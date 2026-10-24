@@ -1,0 +1,15 @@
+{
+	"fixed": {
+		"file_version": "0.1.0"
+	},
+	"info": {
+		"0000": {
+			"ProductVersion": "0.1.0",
+			"CompanyName": "ClaudePro",
+			"FileDescription": "Windows 环境切换与精确还原",
+			"LegalCopyright": "© 2026 ClaudePro contributors",
+			"ProductName": "ClaudePro",
+			"Comments": "Local Windows environment switcher"
+		}
+	}
+}
