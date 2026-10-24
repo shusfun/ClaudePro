@@ -6,7 +6,7 @@
 
 ## 下载
 
-在 [Releases](https://github.com/shusfun/ClaudePro/releases/latest) 下载 Windows x64 的 `claudepro.exe` 和 SHA256 校验文件。需要 Microsoft Edge WebView2 Runtime。首版为预发布版本，系统修改与恢复建议先在可还原的测试环境验证。
+在 [Releases](https://github.com/shusfun/ClaudePro/releases) 下载 Windows x64 的 `claudepro.exe` 和 SHA256 校验文件。需要 Microsoft Edge WebView2 Runtime。首版为预发布版本，系统修改与恢复建议先在可还原的测试环境验证。
 
 ## 使用
 
