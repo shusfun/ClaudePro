@@ -14,7 +14,7 @@ import './style.css';
 
 export default function App() {
   const m=useEnvironment();
-  const u=useUpdate(m.state?.demo, m.state?.allowUpdateInstall, m.busy);
+  const u=useUpdate(m.state?.demo, m.busy);
   const restoreButton=useRef<HTMLButtonElement>(null);
   const dismissExit=useRef<HTMLButtonElement>(null);
   // MiGate's footer is portalled after the popup mounts. Focus the safe action

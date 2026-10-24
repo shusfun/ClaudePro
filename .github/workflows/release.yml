@@ -47,6 +47,10 @@ jobs:
       - run: go vet ./...
       - run: go install github.com/wailsapp/wails/v3/cmd/wails3@v3.0.0-alpha2.117
       - run: wails3 task darwin:package:universal
+      - name: Verify embedded version and update capability
+        run: |
+          expected=$(awk '/^  version:/{gsub(/"/,"",$2); print $2; exit}' build/config.yml)
+          test "$(bin/claudepro.app/Contents/MacOS/claudepro --version)" = "$expected update-install=true"
       - name: Verify universal binary
         run: |
           archs=$(lipo -archs bin/claudepro.app/Contents/MacOS/claudepro)

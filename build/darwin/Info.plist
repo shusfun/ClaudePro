@@ -10,11 +10,11 @@
         <key>CFBundleIdentifier</key>
             <string>local.claudepro.environment</string>
         <key>CFBundleVersion</key>
-            <string>0.1.3</string>
+            <string>0.1.4</string>
         <key>CFBundleGetInfoString</key>
             <string>系统环境切换与精确还原</string>
         <key>CFBundleShortVersionString</key>
-            <string>0.1.3</string>
+            <string>0.1.4</string>
         <key>CFBundleIconFile</key>
             <string>icons</string>
         <key>LSMinimumSystemVersion</key>

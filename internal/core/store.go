@@ -41,7 +41,7 @@ func (s FileStore) Load() (*Journal, error) {
 	}
 	for _, f := range Fields {
 		v, ok := j.Original[f]
-		if !ok || v.Label == "" || len(v.Data) == 0 || j.Target.Value(f) == "" {
+		if !ok || !validStoredValue(f, v) || j.Target.Value(f) == "" {
 			return nil, errors.New("原环境备份不完整")
 		}
 	}
@@ -51,7 +51,7 @@ func (s FileStore) Load() (*Journal, error) {
 			return nil, errors.New("操作日志步骤无效")
 		}
 		seen[step.Field] = true
-		if step.After != nil && (step.After.Label == "" || len(step.After.Data) == 0) {
+		if step.After != nil && !validStoredValue(step.Field, *step.After) {
 			return nil, errors.New("操作日志回读数据不完整")
 		}
 		if j.Status == "active" && (step.After == nil || step.Pending || step.Done || step.After.Label != j.Target.Value(step.Field)) {
@@ -70,6 +70,19 @@ func (s FileStore) Load() (*Journal, error) {
 	}
 	return &j, nil
 }
+
+// macOS 可完整记录一个不存在的偏好键；这与丢失备份数据不同。
+func validStoredValue(field string, v Value) bool {
+	if len(v.Data) == 0 {
+		return false
+	}
+	if v.Label != "" {
+		return true
+	}
+	value, hasValue := v.Data["value"]
+	return (field == "culture" || field == "region") && v.Data["present"] == "0" && hasValue && value == "" && len(v.Data) == 2
+}
+
 func (s FileStore) Save(j *Journal) error { return AtomicJSON(filepath.Join(s.Dir, "journal.json"), j) }
 func (s FileStore) Archive(j *Journal) error {
 	// Never derive a path from user-editable journal identifiers.

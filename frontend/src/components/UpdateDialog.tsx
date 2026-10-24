@@ -26,12 +26,12 @@ export function UpdateDialog({u,current}:{u:UpdateModel;current?:string}) {
       {ready&&<Notice tone="ok" role="status">已下载并校验，重启后替换当前程序。</Notice>}
       {u.busyEnv&&<Notice tone="warn">正在切换或恢复环境，请完成后再安装更新。</Notice>}
       {u.error&&<Notice tone="bad">{u.error}</Notice>}
-      {!u.allowInstall&&<Notice>当前是开发构建，不会替换正在运行的程序。请打开 GitHub Releases 下载正式版。</Notice>}
+      {u.allowInstall===false&&<Notice>当前是开发构建，不会替换正在运行的程序。请打开 GitHub Releases 下载正式版。</Notice>}
       <DialogFooter>
         {!ready&&!downloading&&<Button variant="outline" disabled={locked} onClick={()=>void u.skip()}>跳过此版本</Button>}
         {!ready&&!downloading&&<Button variant="outline" disabled={locked} onClick={u.close}>稍后提醒</Button>}
         {u.allowInstall&&!ready&&<Button disabled={locked} onClick={()=>void u.install()}><Download/>立即更新</Button>}
-        {!u.allowInstall&&<Button onClick={u.openReleases}><ExternalLink/>打开下载页</Button>}
+        {u.allowInstall===false&&<Button onClick={u.openReleases}><ExternalLink/>打开下载页</Button>}
         {ready&&<Button disabled={u.busyEnv} onClick={()=>void u.restart()}><RotateCw/>重启以完成更新</Button>}
       </DialogFooter>
     </DialogContent>

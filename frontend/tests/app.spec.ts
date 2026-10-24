@@ -314,3 +314,14 @@ test('update dialog appears, can be postponed, then skipped',async({page})=>{
  expect(ctl.skip).toBe('0.2.0');
 });
 
+
+test('update install capability comes from update response when environment is unavailable',async({page})=>{
+ const {ctl}=await mockHost(page);
+ ctl.update={version:'0.1.4',name:'ClaudePro',notes:'修复恢复与更新',filename:'claudepro-macos-universal.zip',size:12000000,allowInstall:true};
+ ctl.failRead=true;
+ await page.goto('/?platform=darwin');
+ await expect(page.getByRole('button',{name:'立即更新',exact:true})).toBeVisible();
+ await expect(page.getByText(/当前是开发构建/)).toHaveCount(0);
+ await page.getByRole('button',{name:'立即更新',exact:true}).click();
+ await expect.poll(()=>ctl.installCalls).toBe(1);
+});

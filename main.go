@@ -17,6 +17,10 @@ import (
 var assets embed.FS
 
 func main() {
+	if len(os.Args) > 1 && os.Args[1] == "--version" {
+		fmt.Printf("%s update-install=%t\n", appVersion, allowUpdateInstall)
+		return
+	}
 	if handled := platformCommand(os.Args); handled {
 		return
 	}

@@ -341,3 +341,69 @@ func TestStructurallyDamagedBackupBlocksRestoration(t *testing.T) {
 		})
 	}
 }
+
+func TestAbsentMacPreferenceRoundTrip(t *testing.T) {
+	for _, field := range []string{"culture", "region"} {
+		t.Run(field, func(t *testing.T) {
+			e, h, s := setup(t)
+			absent := Value{Label: "", Data: map[string]string{"present": "0", "value": ""}}
+			h.env[field] = absent
+			if err := e.Switch(target); err != nil {
+				t.Fatal(err)
+			}
+			// 重启后也必须能读取备份并恢复不存在的键。
+			e = New(h, s, nil)
+			if _, err := e.Inspect(); err != nil {
+				t.Fatal(err)
+			}
+			if err := e.Restore(nil); err != nil {
+				t.Fatal(err)
+			}
+			if !Equal(h.env[field], absent) {
+				t.Fatal(h.env[field])
+			}
+			if _, err := s.Load(); err != nil {
+				t.Fatal(err)
+			}
+		})
+	}
+}
+
+func TestPendingTimezoneWithAbsentCountry(t *testing.T) {
+	e, h, s := setup(t)
+	h.env["region"] = Value{Data: map[string]string{"present": "0", "value": ""}}
+	original := clone(h.env)
+	h.env["timezone"] = Value{Label: target.Timezone, Data: map[string]string{"id": target.Timezone}}
+	j := &Journal{Version: 1, ID: "mac-readback-failure", Status: "needs_restore", Original: original, Target: target, Steps: []Step{{Field: "timezone", Before: original["timezone"], Pending: true}}}
+	if err := s.Save(j); err != nil {
+		t.Fatal(err)
+	}
+	view, err := e.Inspect()
+	if err != nil || len(view.Conflicts) != 1 {
+		t.Fatalf("%+v %v", view, err)
+	}
+	if e.Restore(nil) == nil || len(h.writes) != 0 {
+		t.Fatal("unknown write restored without choice")
+	}
+	choice := map[string]Choice{"timezone": {Action: "restore", Observed: h.env["timezone"]}}
+	if err := e.Restore(choice); err != nil {
+		t.Fatal(err)
+	}
+	if !Equal(h.env["timezone"], original["timezone"]) {
+		t.Fatal(h.env)
+	}
+	if _, err := s.Load(); err != nil {
+		t.Fatal(err)
+	}
+}
+
+func TestEmptyStoredValueRequiresExplicitAbsentPreference(t *testing.T) {
+	for _, data := range []map[string]string{nil, {"present": "0"}, {"present": "1", "value": ""}, {"present": "0", "value": "US"}, {"Nation": ""}} {
+		if validStoredValue("region", Value{Data: data}) {
+			t.Fatalf("accepted incomplete data: %v", data)
+		}
+	}
+	if validStoredValue("timezone", Value{Data: map[string]string{"present": "0", "value": ""}}) {
+		t.Fatal("accepted absent timezone")
+	}
+}

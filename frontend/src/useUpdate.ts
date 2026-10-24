@@ -13,14 +13,7 @@ function eventData<T>(e:{data?:T}|T):T {
   return e as T;
 }
 
-function asInfo(raw:unknown, allowInstall:boolean):UpdateInfo|null {
-  if(!raw||typeof raw!=='object')return null;
-  const r=raw as UpdateInfo & {artifact?:{filename?:string;size?:number}};
-  if(!r.version)return null;
-  return {version:r.version,name:r.name||'',notes:r.notes||'',filename:r.filename||r.artifact?.filename||'',size:r.size||r.artifact?.size||0,allowInstall};
-}
-
-export function useUpdate(demo:boolean|undefined, allowInstall:boolean|undefined, busy:boolean) {
+export function useUpdate(demo:boolean|undefined, busy:boolean) {
   const toast=useToast();
   const [open,setOpen]=useState(false);
   const [phase,setPhase]=useState<Phase>('idle');
@@ -30,9 +23,7 @@ export function useUpdate(demo:boolean|undefined, allowInstall:boolean|undefined
   const [checking,setChecking]=useState(false);
   const auto=useRef(false);
 
-  const show=(raw:unknown)=>{
-    const info=asInfo(raw,!!allowInstall);
-    if(!info)return;
+  const show=(info:UpdateInfo)=>{
     setRelease(info);setError('');setProgress(0);setPhase('available');setOpen(true);
   };
 
@@ -48,13 +39,12 @@ export function useUpdate(demo:boolean|undefined, allowInstall:boolean|undefined
   };
 
   useEffect(()=>{
-    if(demo!==false||auto.current)return;
+    if(demo===true||auto.current)return;
     auto.current=true;void check(false);
   },[demo]);
 
   useEffect(()=>{
     const offs=[
-      Events.On(Updater.Events.UpdateAvailable,e=>show(eventData<UpdateInfo>(e))),
       Events.On(Updater.Events.DownloadProgress,e=>{
         const p=eventData<{written?:number;total?:number}>(e);
         if(p?.total)setProgress(Math.round((p.written||0)*100/p.total));
@@ -71,11 +61,11 @@ export function useUpdate(demo:boolean|undefined, allowInstall:boolean|undefined
 
   const act=async(fn:()=>Promise<unknown>,next?:Phase)=>{
     setError('');
-    try{await fn();if(next)setPhase(next);}catch(e){setPhase('error');setError(e instanceof Error?e.message:String(e));}
+    try{if(next)setPhase(next);await fn();}catch(e){setPhase('error');setError(e instanceof Error?e.message:String(e));}
   };
 
   return {
-    open,phase,release,progress,error,checking,allowInstall:!!allowInstall,
+    open,phase,release,progress,error,checking,allowInstall:release?.allowInstall,
     busyEnv:busy,
     check:()=>check(true),
     close:()=>{setOpen(false);if(phase!=='downloading'&&phase!=='ready')setPhase('idle');},
