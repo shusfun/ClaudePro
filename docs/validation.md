@@ -13,7 +13,7 @@
 | 客户端 | CLI 参数传递、空格/中文/引号/元字符路径、缺失客户端、MSIX 清单应用 ID、MSIX 优先、普通安装回退、已有 Desktop 窗口激活、隐藏窗口错误 | 发现和激活使用 PowerShell 命令替身，不启动用户的真实 Claude |
 | 前端 | MiGate 组件迁移后回归首次配置、保存、进程阻挡错误、切换、目标锁定、冲突选择、恢复、两种客户端入口、退出提醒、备份损坏状态 | Edge 无头浏览器，模拟 Wails RPC |
 | 交互与外观 | 浅色/深色/跟随系统、主题及导航折叠持久化、850×640 抽屉导航、600+ 项格式列表滚动、搜索及键盘选择、焦点限制及回到入口、退出默认安全焦点、恢复期间禁止关闭和重复提交 | 默认 1160×820 与最小窗口截图，均人工检查；6 组 Playwright 测试通过 |
-| 构建 | Go 测试与 vet、TypeScript、Vite 生产构建、Wails Windows amd64 EXE | 未签名便携版，无安装器 |
+| 构建 | Go 测试与 vet、TypeScript、Vite 生产构建、Wails Windows amd64 EXE、macOS Universal DMG | 未签名便携版；Mac 为拖到“应用程序”的 UDZO 镜像 |
 | 本机只读 | 实际环境快照、144 个时区、605 种区域格式、248 个地区选项、npm CLI、Desktop MSIX、运行会话识别 | 数量随 Windows 版本变化，无系统设置写入 |
 | 原生启动 | 新版 EXE 使用 --demo 启动，截图确认 MiGate 组件、系统深色主题和模拟设置页正常显示 | test-results/native-migate/window.png；完整原生系统联调待独立测试环境验收 |
 | 应用内更新 | GitHub Releases 检查、MiGate 更新弹窗、稍后提醒、跳过此版本；生产构建才允许下载替换 | Playwright 模拟 Wails 更新 RPC；`--demo` 与开发构建不替换当前二进制；忙碌的环境操作会拒绝安装/重启。0.1.2 起随 tag 工作流发布 |

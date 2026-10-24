@@ -12,6 +12,7 @@ func TestMatchReleaseAsset(t *testing.T) {
 		{Name: "SHA256SUMS"},
 		{Name: "claudepro.exe.sha256"},
 		{Name: "claudepro.exe"},
+		{Name: "ClaudePro-macos-universal.dmg"},
 		{Name: "claudepro-macos-universal.zip"},
 		{Name: "notes.md"},
 	}
@@ -38,6 +39,10 @@ func TestMatchReleaseAsset(t *testing.T) {
 	idx := matchReleaseAsset(updater.CheckRequest{Platform: "windows", Arch: "amd64"}, []github.ReleaseAsset{{Name: "claudepro-windows-amd64.exe"}})
 	if idx != 0 {
 		t.Fatal("windows-amd64 alias")
+	}
+	idx = matchReleaseAsset(updater.CheckRequest{Platform: "darwin", Arch: "arm64"}, []github.ReleaseAsset{{Name: "ClaudePro-macos-universal.dmg"}})
+	if idx != -1 {
+		t.Fatal("dmg is not an in-app update payload")
 	}
 }
 

@@ -126,6 +126,23 @@ tasks:
       - task: build:universal
     cmds:
       - task: create:app:bundle
+      - task: create:dmg
+
+  create:dmg:
+    summary: Packs ClaudePro.app into a UDZO disk image with an Applications shortcut
+    platforms: [darwin]
+    cmds:
+      - |
+        set -euo pipefail
+        app="{{.BIN_DIR}}/{{.APP_NAME}}.app"
+        dmg="{{.BIN_DIR}}/ClaudePro-macos-universal.dmg"
+        test -d "$app"
+        stage=$(mktemp -d)
+        trap 'rm -rf "$stage"' EXIT
+        cp -R "$app" "$stage/ClaudePro.app"
+        ln -s /Applications "$stage/Applications"
+        rm -f "$dmg"
+        hdiutil create -volname ClaudePro -srcfolder "$stage" -ov -format UDZO "$dmg"
 
 
   create:app:bundle:

@@ -61,4 +61,6 @@ jobs:
       - uses: actions/upload-artifact@v4
         with:
           name: claudepro-macos-universal
-          path: bin/claudepro-macos-universal.zip
+          path: |
+            bin/ClaudePro-macos-universal.dmg
+            bin/claudepro-macos-universal.zip

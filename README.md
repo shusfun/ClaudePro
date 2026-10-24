@@ -6,7 +6,7 @@
 
 ## 下载
 
-在 [Releases](https://github.com/shusfun/ClaudePro/releases) 下载 Windows x64 的 `claudepro.exe` 和 SHA256 校验文件，或 macOS Universal zip。需要 Microsoft Edge WebView2 Runtime。首版为预发布版本，系统修改与恢复建议先在可还原的测试环境验证。正式版启动后会检查 GitHub Releases；有新版本时弹出更新窗，可下载并替换当前程序。`wails3 task dev` 与 `--demo` 不会替换正在运行的二进制。发布标签（如 `v0.1.2`）必须与 `build/config.yml` 的 `info.version` 一致。
+在 [Releases](https://github.com/shusfun/ClaudePro/releases) 下载 Windows x64 的 `claudepro.exe`，或 macOS Universal `ClaudePro-macos-universal.dmg`（Apple Silicon + Intel，拖到“应用程序”）。需要 Microsoft Edge WebView2 Runtime。首版为预发布版本，系统修改与恢复建议先在可还原的测试环境验证。正式版启动后会检查 GitHub Releases；有新版本时弹出更新窗，可下载并替换当前程序。`wails3 task dev` 与 `--demo` 不会替换正在运行的二进制。发布标签（如 `v0.1.2`）必须与 `build/config.yml` 的 `info.version` 一致。
 
 ## 使用
 
@@ -54,7 +54,7 @@ npx playwright test
 Pop-Location
 ```
 
-输出 `bin/claudepro.exe`。macOS 在本机执行 `wails3 task darwin:package:universal`，输出 Universal `bin/claudepro.app`；CI 的 macOS 任务会上传其 zip。UI 测试使用本机 Edge 和模拟 Wails 接口。普通测试不修改系统设置、不启动或终止真实 Claude。`wails3 dev` 默认使用真实适配器，安全演示请使用 `--demo`。
+输出 `bin/claudepro.exe`。macOS 在本机执行 `wails3 task darwin:package:universal`，输出 Universal `bin/claudepro.app` 和 `bin/ClaudePro-macos-universal.dmg`。CI 发布 DMG 给人下载，另附 zip 供应用内更新。UI 测试使用本机 Edge 和模拟 Wails 接口。普通测试不修改系统设置、不启动或终止真实 Claude。`wails3 dev` 默认使用真实适配器，安全演示请使用 `--demo`。
 
 ## 结构
 

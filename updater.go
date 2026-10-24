@@ -62,9 +62,17 @@ func matchReleaseAsset(req updater.CheckRequest, assets []github.ReleaseAsset) i
 			if name == "claudepro-macos-universal.zip" {
 				return i
 			}
-			if strings.Contains(name, "macos") || strings.Contains(name, "darwin") {
-				return i
-			}
+		}
+	}
+	if plat != "darwin" {
+		return -1
+	}
+	// Zip is the in-app update payload. A DMG is the Finder download; Wails
+	// cannot unpack it, so only match one when no zip is present.
+	for i, a := range assets {
+		name := strings.ToLower(a.Name)
+		if strings.HasSuffix(name, ".zip") && (strings.Contains(name, "macos") || strings.Contains(name, "darwin")) {
+			return i
 		}
 	}
 	return -1
