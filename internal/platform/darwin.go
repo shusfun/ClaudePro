@@ -67,7 +67,20 @@ func readDefault(domain, key string) (value string, present bool, err error) {
 }
 
 func readTimezone() (string, error) {
-	link, err := os.Readlink(localtimeLink)
+	return readTimezoneLink(func() (string, error) { return os.Readlink(localtimeLink) }, time.Sleep)
+}
+
+// macOS 更新时区时可能短暂移除链接；只重试不存在，不掩盖权限或格式错误。
+func readTimezoneLink(readlink func() (string, error), sleep func(time.Duration)) (string, error) {
+	var link string
+	var err error
+	for attempt := 0; attempt < 21; attempt++ {
+		link, err = readlink()
+		if !errors.Is(err, os.ErrNotExist) || attempt == 20 {
+			break
+		}
+		sleep(100 * time.Millisecond)
+	}
 	if err != nil {
 		return "", fmt.Errorf("无法读取系统时区：%w", err)
 	}
@@ -200,7 +213,35 @@ func setTimezone(id, auto string) error {
 		}
 		return fmt.Errorf("时区修改失败：%w", err)
 	}
-	return nil
+	return waitTimezone(id, auto, func() (string, string, error) {
+		tz, err := readTimezone()
+		if err != nil {
+			return "", "", err
+		}
+		active, present, err := readDefault(autoTimezone, "Active")
+		if !present {
+			active = ""
+		}
+		return tz, active, err
+	}, time.Sleep)
+}
+
+// systemsetup 返回不代表系统已发布最终值；切换和恢复均须确认两项设置。
+func waitTimezone(id, auto string, read func() (string, string, error), sleep func(time.Duration)) error {
+	expectedAuto := map[string]string{"true": "1", "false": "0", "delete": ""}[auto]
+	for attempt := 0; ; attempt++ {
+		tz, active, err := read()
+		if err != nil {
+			return fmt.Errorf("时区修改后核验失败：%w", err)
+		}
+		if tz == id && active == expectedAuto {
+			return nil
+		}
+		if attempt == 30 {
+			return fmt.Errorf("时区修改后核验超时：目标 %s / 自动时区 %q，实际 %s / 自动时区 %q", id, expectedAuto, tz, active)
+		}
+		sleep(100 * time.Millisecond)
+	}
 }
 
 func writeDefault(key, value string) error {
