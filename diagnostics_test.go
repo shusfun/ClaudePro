@@ -134,7 +134,7 @@ func TestSwitchToTransactions(t *testing.T) {
 			host := &failingHost{Demo: platform.NewDemo(dir), fail: failure}
 			s := newService(host, dir, true, nil)
 			before, _ := host.Read()
-			target := core.Target{Timezone: "Tokyo Standard Time", Culture: "ja-JP", Region: "122"}
+			target := demoPreset("japan")
 			err := s.SwitchTo(target)
 			if failure != "" {
 				if err == nil || !strings.Contains(err.Error(), "目标已保存") {
@@ -151,7 +151,7 @@ func TestSwitchToTransactions(t *testing.T) {
 					t.Fatal(err)
 				}
 				journal, _ := os.ReadFile(filepath.Join(dir, "journal.json"))
-				if s.SwitchTo(core.Target{Timezone: "Eastern Standard Time", Culture: "en-US", Region: "244"}) == nil {
+				if s.SwitchTo(demoPreset("us-east")) == nil {
 					t.Fatal("active switch allowed")
 				}
 				after, _ := os.ReadFile(filepath.Join(dir, "journal.json"))
@@ -171,8 +171,11 @@ func TestSwitchToTransactions(t *testing.T) {
 }
 
 func TestSwitchToPersistenceAndConcurrency(t *testing.T) {
-	target := core.Target{Timezone: "Tokyo Standard Time", Culture: "ja-JP", Region: "122"}
+	target := demoPreset("japan")
 	t.Run("save-failure", func(t *testing.T) {
+		if platform.Kind != "windows" {
+			t.Skip("read-only config replace is a Windows atomic-rename behavior")
+		}
 		dir := t.TempDir()
 		host := platform.NewDemo(dir)
 		s := newService(host, dir, true, nil)

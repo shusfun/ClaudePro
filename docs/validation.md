@@ -1,6 +1,6 @@
 # ClaudePro 验证记录
 
-当前发布版本 0.1.1。下文 0.1.0 条目保留为当时验收记录。
+当前发布版本 0.1.2。下文 0.1.0 条目保留为当时验收记录。
 
 验证平台：Windows 11 25H2 x64，Go 1.25.0，Node.js 22.18.0，Wails v3.0.0-alpha2.117，WebView2 155.0.4283.62。
 
@@ -16,7 +16,7 @@
 | 构建 | Go 测试与 vet、TypeScript、Vite 生产构建、Wails Windows amd64 EXE | 未签名便携版，无安装器 |
 | 本机只读 | 实际环境快照、144 个时区、605 种区域格式、248 个地区选项、npm CLI、Desktop MSIX、运行会话识别 | 数量随 Windows 版本变化，无系统设置写入 |
 | 原生启动 | 新版 EXE 使用 --demo 启动，截图确认 MiGate 组件、系统深色主题和模拟设置页正常显示 | test-results/native-migate/window.png；完整原生系统联调待独立测试环境验收 |
-| 应用内更新 | GitHub Releases 检查、MiGate 更新弹窗、稍后提醒、跳过此版本；生产构建才允许下载替换 | Playwright 模拟 Wails 更新 RPC；`--demo` 与开发构建不替换当前二进制；忙碌的环境操作会拒绝安装/重启。0.1.1 起随 tag 工作流发布 |
+| 应用内更新 | GitHub Releases 检查、MiGate 更新弹窗、稍后提醒、跳过此版本；生产构建才允许下载替换 | Playwright 模拟 Wails 更新 RPC；`--demo` 与开发构建不替换当前二进制；忙碌的环境操作会拒绝安装/重启。0.1.2 起随 tag 工作流发布 |
 
 WebView2 缺失分支在创建窗口前检查运行时版本，显示中文原生提示、微软下载地址并退出。已检查此代码分支；当前机器安装了运行时，没有卸载来模拟缺失。
 

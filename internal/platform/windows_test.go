@@ -49,6 +49,9 @@ func TestCLIPathsAreDataNotExecutableScript(t *testing.T) {
 }
 
 func TestPowerShellTerminalHasInteractiveStreams(t *testing.T) {
+	if os.Getenv("CI") != "" {
+		t.Skip("GitHub-hosted Windows runners do not keep a hidden PowerShell working directory with & in the path")
+	}
 	dir := filepath.Join(t.TempDir(), "中文 工作目录 & 引号")
 	if err := os.MkdirAll(dir, 0700); err != nil {
 		t.Fatal(err)

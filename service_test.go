@@ -34,14 +34,14 @@ func TestServiceRestartRecoveryAndTargetLock(t *testing.T) {
 	host := platform.NewDemo(dir)
 	s := newService(host, dir, true, nil)
 	before, _ := host.Read()
-	c := core.Config{Version: 1, Target: core.Target{Timezone: "Eastern Standard Time", Culture: "en-US", Region: "244"}, WorkDir: dir}
+	c := core.Config{Version: 1, Target: demoPreset("us-east"), WorkDir: dir}
 	if err := s.SaveConfig(c); err != nil {
 		t.Fatal(err)
 	}
 	if err := s.Switch(); err != nil {
 		t.Fatal(err)
 	}
-	c.Target.Timezone = "Pacific Standard Time"
+	c.Target = demoPreset("us-west")
 	if s.SaveConfig(c) == nil {
 		t.Fatal("target changed while active")
 	}
@@ -88,7 +88,7 @@ func TestBusyExitAndConfigurationCorruption(t *testing.T) {
 func TestDamagedConfigDoesNotHideRecovery(t *testing.T) {
 	dir := t.TempDir()
 	s := newService(platform.NewDemo(dir), dir, true, nil)
-	c := core.Config{Version: 1, Target: core.Target{Timezone: "Eastern Standard Time", Culture: "en-US", Region: "244"}, WorkDir: dir}
+	c := core.Config{Version: 1, Target: demoPreset("us-east"), WorkDir: dir}
 	if err := s.SaveConfig(c); err != nil {
 		t.Fatal(err)
 	}

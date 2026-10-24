@@ -6,7 +6,7 @@
 
 ## 下载
 
-在 [Releases](https://github.com/shusfun/ClaudePro/releases) 下载 Windows x64 的 `claudepro.exe` 和 SHA256 校验文件，或 macOS Universal zip。需要 Microsoft Edge WebView2 Runtime。首版为预发布版本，系统修改与恢复建议先在可还原的测试环境验证。正式版启动后会检查 GitHub Releases；有新版本时弹出更新窗，可下载并替换当前程序。`wails3 task dev` 与 `--demo` 不会替换正在运行的二进制。发布标签（如 `v0.1.1`）必须与 `build/config.yml` 的 `info.version` 一致。
+在 [Releases](https://github.com/shusfun/ClaudePro/releases) 下载 Windows x64 的 `claudepro.exe` 和 SHA256 校验文件，或 macOS Universal zip。需要 Microsoft Edge WebView2 Runtime。首版为预发布版本，系统修改与恢复建议先在可还原的测试环境验证。正式版启动后会检查 GitHub Releases；有新版本时弹出更新窗，可下载并替换当前程序。`wails3 task dev` 与 `--demo` 不会替换正在运行的二进制。发布标签（如 `v0.1.2`）必须与 `build/config.yml` 的 `info.version` 一致。
 
 ## 使用
 
