@@ -5,38 +5,22 @@ import (
 	"embed"
 	"encoding/json"
 	"fmt"
-	"github.com/wailsapp/wails/v3/pkg/application"
-	"github.com/wailsapp/wails/v3/pkg/events"
-	"golang.org/x/sys/windows"
 	"os"
-	"path/filepath"
 	"strconv"
 	"sync/atomic"
+
+	"github.com/wailsapp/wails/v3/pkg/application"
+	"github.com/wailsapp/wails/v3/pkg/events"
 )
 
 //go:embed all:frontend/dist
 var assets embed.FS
 
-func message(text string) {
-	t, _ := windows.UTF16PtrFromString(text)
-	c, _ := windows.UTF16PtrFromString("ClaudePro")
-	windows.MessageBox(0, t, c, windows.MB_OK|windows.MB_ICONINFORMATION)
-}
 func main() {
-	if len(os.Args) > 1 && os.Args[1] == "--timezone-helper" {
-		if len(os.Args) != 4 {
-			os.Exit(2)
-		}
-		pid, err := strconv.ParseUint(os.Args[3], 10, 32)
-		if err != nil {
-			os.Exit(2)
-		}
-		if err = platform.TimezoneHelper(os.Args[2], uint32(pid)); err != nil {
-			os.Exit(1)
-		}
+	if handled := platformCommand(os.Args); handled {
 		return
 	}
-	host := &platform.Windows{}
+	host := platform.NewHost()
 	if len(os.Args) > 1 && os.Args[1] == "--diagnose" {
 		env, e1 := host.Read()
 		clients, e2 := host.Discover()
@@ -47,81 +31,96 @@ func main() {
 		return
 	}
 	demo := len(os.Args) > 1 && os.Args[1] == "--demo"
-	dir := filepath.Join(os.Getenv("LOCALAPPDATA"), "ClaudePro")
+	dir, err := dataDir(demo)
+	if err != nil {
+		message("无法定位备份目录：" + err.Error())
+		return
+	}
 	var adapter Host = host
 	if demo {
-		dir += "-Demo"
 		adapter = platform.NewDemo(dir)
 	}
-	name, _ := windows.UTF16PtrFromString("Local\\ClaudePro.EnvironmentSwitcher" + strconv.FormatBool(demo))
-	mutex, err := windows.CreateMutex(nil, false, name)
-	if err == windows.ERROR_ALREADY_EXISTS {
-		if mutex != 0 {
-			windows.CloseHandle(mutex)
-		}
-		message("ClaudePro 已在运行，请切换到已有窗口。")
-		return
-	}
-	if err != nil {
-		message(err.Error())
-		return
-	}
-	defer windows.CloseHandle(mutex)
 	if err = os.MkdirAll(dir, 0700); err != nil {
 		message("无法创建备份目录：" + err.Error())
 		return
 	}
 	var app *application.App
-	winOptions := application.WindowsOptions{WebviewUserDataPath: filepath.Join(dir, "WebView2")}
-	// Opt-in local debugging is available only with the simulated adapter.
-	if demo {
-		if port, err := strconv.Atoi(os.Getenv("CLAUDEPRO_DEMO_CDP_PORT")); err == nil && port >= 1024 && port <= 65535 {
-			winOptions.AdditionalBrowserArgs = []string{fmt.Sprintf("--remote-debugging-port=%d", port), "--remote-debugging-address=127.0.0.1"}
-		}
-	}
+	var window *application.WebviewWindow
 	svc := newService(adapter, dir, demo, func(msg string) {
 		if app != nil {
 			app.Event.Emit("operation-progress", msg)
 		}
 	})
+	var allowExit atomic.Bool
 	app = application.New(application.Options{
-		Name: "ClaudePro", Description: "Windows 环境切换与精确还原",
-		Windows:      winOptions,
-		Services:     []application.Service{application.NewService(svc)},
-		Assets:       application.AssetOptions{Handler: application.AssetFileServerFS(assets)},
+		Name: "ClaudePro", Description: "系统环境切换与精确还原",
+		Windows:  windowsOptions(dir, demo),
+		Mac:      application.MacOptions{ApplicationShouldTerminateAfterLastWindowClosed: true},
+		Services: []application.Service{application.NewService(svc)},
+		Assets:   application.AssetOptions{Handler: application.AssetFileServerFS(assets)},
+		SingleInstance: &application.SingleInstanceOptions{
+			UniqueID: "local.claudepro.environment." + strconv.FormatBool(demo),
+			OnSecondInstanceLaunch: func(application.SecondInstanceData) {
+				if window != nil {
+					window.UnMinimise()
+					window.Show()
+					window.Focus()
+				}
+			},
+		},
+		// macOS 的 ⌘Q 与 Dock 退出走这里；与窗口关闭共用同一套确认。
+		ShouldQuit: func() bool {
+			if allowExit.Load() {
+				return true
+			}
+			return requestClose(app, svc)
+		},
 		ErrorHandler: func(err error) { message("应用发生错误：" + err.Error()) },
 	})
-	if version, _ := app.Env.Info().PlatformInfo["WebView2"].(string); version == "" {
-		message("未检测到可用的 Microsoft Edge WebView2 Runtime。\n请安装 Evergreen Runtime 后重新打开 ClaudePro：\nhttps://developer.microsoft.com/microsoft-edge/webview2/\n\n本次未修改任何环境设置，已有恢复记录仍保留。")
+	if !checkRuntime(app) {
 		return
 	}
-	var allowExit atomic.Bool
 	svc.quit = func() { allowExit.Store(true); app.Quit() }
-	title := "ClaudePro · 环境切换"
+	title := "ClaudePro"
 	if demo {
 		title += " [模拟模式]"
 	}
-	window := app.Window.NewWithOptions(application.WebviewWindowOptions{
-		Title: title, Width: 1160, Height: 820, MinWidth: 850, MinHeight: 640,
-		BackgroundColour: application.NewRGB(246, 247, 249), URL: "/",
+	window = app.Window.NewWithOptions(application.WebviewWindowOptions{
+		Title: title, Width: 1120, Height: 780, MinWidth: 820, MinHeight: 600,
+		// 自绘标题栏：Windows 去掉原生边框但保留系统阴影与圆角；macOS 隐藏标题并保留红绿灯。
+		Frameless:        platform.Kind == "windows",
+		BackgroundColour: application.NewRGB(242, 242, 247), URL: "/",
+		Mac: application.MacWindow{
+			TitleBar:                application.MacTitleBarHiddenInset,
+			InvisibleTitleBarHeight: 0,
+		},
 	})
 	window.RegisterHook(events.Common.WindowClosing, func(e *application.WindowEvent) {
 		if allowExit.Load() {
 			return
 		}
-		switch svc.closeStatus() {
-		case "busy":
+		if !requestClose(app, svc) {
 			e.Cancel()
-			app.Event.Emit("close-blocked", "正在操作，请完成后退出")
-		case "confirm":
-			e.Cancel()
-			app.Event.Emit("close-requested", true)
 		}
 	})
 	if err = app.Run(); err != nil {
-		message("无法启动 ClaudePro。请检查 Microsoft Edge WebView2 Runtime 是否已安装。\n" + err.Error())
+		message("无法启动 ClaudePro。\n" + err.Error())
 	}
 }
+
+// requestClose 返回 true 表示可以直接关闭；否则通知前端处理。
+func requestClose(app *application.App, svc *Service) bool {
+	switch svc.closeStatus() {
+	case "busy":
+		app.Event.Emit("close-blocked", "正在操作，请完成后退出")
+		return false
+	case "confirm":
+		app.Event.Emit("close-requested", true)
+		return false
+	}
+	return true
+}
+
 func errText(e error) any {
 	if e != nil {
 		return e.Error()

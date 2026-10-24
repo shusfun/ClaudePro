@@ -17,11 +17,12 @@ type Host interface {
 	LaunchDesktop(string, string) error
 }
 type State struct {
-	View    core.View   `json:"view"`
-	Config  core.Config `json:"config"`
-	DataDir string      `json:"dataDir"`
-	Demo    bool        `json:"demo"`
-	Warning string      `json:"warning"`
+	View     core.View   `json:"view"`
+	Config   core.Config `json:"config"`
+	DataDir  string      `json:"dataDir"`
+	Demo     bool        `json:"demo"`
+	Warning  string      `json:"warning"`
+	Platform string      `json:"platform"`
 }
 type Service struct {
 	op           sync.Mutex
@@ -65,9 +66,9 @@ func (s *Service) GetState() (State, error) {
 	if err != nil && v.Journal != nil {
 		// A damaged preferences file must never hide a valid recovery journal.
 		c = core.Config{Version: 1, Target: v.Journal.Target}
-		return State{View: v, Config: c, DataDir: s.dir, Demo: s.demo, Warning: "设置文件损坏，但恢复记录仍可读取。若有未完成操作，请先恢复原环境，再修复 config.json：" + err.Error()}, nil
+		return State{View: v, Config: c, DataDir: s.dir, Demo: s.demo, Platform: platform.Kind, Warning: "设置文件损坏，但恢复记录仍可读取。若有未完成操作，请先恢复原环境，再修复 config.json：" + err.Error()}, nil
 	}
-	return State{View: v, Config: c, DataDir: s.dir, Demo: s.demo}, err
+	return State{View: v, Config: c, DataDir: s.dir, Demo: s.demo, Platform: platform.Kind}, err
 }
 func (s *Service) GetCatalog() (core.Catalog, error) { return s.host.Catalog() }
 func (s *Service) GetClients() (core.Clients, error) { return s.host.Discover() }
@@ -91,20 +92,23 @@ func (s *Service) SaveConfig(c core.Config) error {
 	if core.Active(j) && c.Target != old.Target {
 		return errors.New("恢复原环境后才能修改目标配置")
 	}
-	if err = s.host.Validate(c.Target); err != nil {
-		return err
+	// 设置窗口只修改客户端路径并沿用已保存的目标；目标未变时无需再读取系统目录。
+	if c.Target != old.Target {
+		if err = s.host.Validate(c.Target); err != nil {
+			return err
+		}
 	}
 	st, err := os.Stat(c.WorkDir)
 	if err != nil || !st.IsDir() {
 		return errors.New("CLI 工作目录必须是存在的文件夹")
 	}
 	if c.CLIPath != "" {
-		if err = platform.ValidateLaunchPath(c.CLIPath, ".exe", ".cmd", ".ps1"); err != nil {
+		if err = platform.ValidateClientPath("cli", c.CLIPath); err != nil {
 			return err
 		}
 	}
 	if c.DesktopPath != "" {
-		if err = platform.ValidateLaunchPath(c.DesktopPath, ".exe"); err != nil {
+		if err = platform.ValidateClientPath("desktop", c.DesktopPath); err != nil {
 			return err
 		}
 	}
@@ -194,7 +198,7 @@ func (s *Service) Launch(client string) error {
 		path, kind := clients.Desktop, clients.DesktopKind
 		if c.DesktopPath != "" {
 			path = c.DesktopPath
-			kind = "exe"
+			kind = map[string]string{"windows": "exe", "darwin": "app"}[platform.Kind]
 		}
 		if path == "" {
 			return errors.New("未找到 Claude Desktop，请在设置中指定路径")

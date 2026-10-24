@@ -72,7 +72,7 @@ func TestPresetsAndDemoDiagnostics(t *testing.T) {
 			t.Fatal(p)
 		}
 	}
-	for _, p := range core.Presets(core.Catalog{}) {
+	for _, p := range core.Presets(core.Catalog{}, platform.Kind) {
 		if p.Unavailable == "" {
 			t.Fatal("missing catalog enabled preset")
 		}

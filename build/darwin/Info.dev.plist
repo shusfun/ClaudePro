@@ -4,27 +4,27 @@
         <key>CFBundlePackageType</key>
             <string>APPL</string>
         <key>CFBundleName</key>
-            <string>My Product</string>
+            <string>ClaudePro</string>
         <key>CFBundleExecutable</key>
-            <string>claudepro.exe</string>
+            <string>claudepro</string>
         <key>CFBundleIdentifier</key>
-            <string>com.example.claudepro</string>
+            <string>local.claudepro.environment</string>
         <key>CFBundleVersion</key>
             <string>0.1.0</string>
         <key>CFBundleGetInfoString</key>
-            <string>This is a comment</string>
+            <string>系统环境切换与精确还原</string>
         <key>CFBundleShortVersionString</key>
             <string>0.1.0</string>
         <key>CFBundleIconFile</key>
             <string>icons</string>
-        <key>CFBundleIconName</key>
-            <string>appicon</string>
         <key>LSMinimumSystemVersion</key>
             <string>12.0.0</string>
+        <key>NSAppleEventsUsageDescription</key>
+            <string>ClaudePro 需要控制“终端”以在新窗口中启动 Claude Code CLI。</string>
         <key>NSHighResolutionCapable</key>
             <string>true</string>
         <key>NSHumanReadableCopyright</key>
-            <string>© 2026, My Company</string>
+            <string>(c) 2026 ClaudePro contributors</string>
         <key>NSAppTransportSecurity</key>
         <dict>
             <key>NSAllowsLocalNetworking</key>

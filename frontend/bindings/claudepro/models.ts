@@ -46,4 +46,5 @@ export interface State {
     "dataDir": string;
     "demo": boolean;
     "warning": string;
+    "platform": string;
 }

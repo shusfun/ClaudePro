@@ -25,7 +25,7 @@ async function mockHost(page:Page,configured=true,longCatalog=false){
     {id:'germany',name:'德国',country:'DE',target:{timezone:'W. Europe Standard Time',culture:'de-DE',region:'94'},unavailable:''},
     {id:'singapore',name:'新加坡',country:'SG',target:{timezone:'Singapore Standard Time',culture:'en-SG',region:'215'},unavailable:''},
     {id:'japan',name:'日本',country:'JP',target:{timezone:'Tokyo Standard Time',culture:'ja-JP',region:'122'},unavailable:''},
-    {id:'uk',name:'英国',country:'GB',target:{timezone:'GMT Standard Time',culture:'en-GB',region:'242'},unavailable:'本机 Windows 缺少选项：GMT Standard Time'}];break;
+    {id:'uk',name:'英国',country:'GB',target:{timezone:'GMT Standard Time',culture:'en-GB',region:'242'},unavailable:'本机系统缺少选项：GMT Standard Time'}];break;
    case 4181845581:data={time:'2026-10-24T05:00:00Z',checks:[
     {id:'timezone',name:'系统时区',status:'info',detail:'当前与目标不同',action:'settings'},
     {id:'cli',name:'Claude Code CLI',status:'ok',detail:'已自动发现客户端',action:'settings'},
@@ -58,23 +58,26 @@ function injectConflict(state:any){
  state.view.current.culture=changed;state.view.conflicts=[{field:'culture',current:changed,original:original.culture,expected:{label:'en-US',data:{value:'en-US'}}}];
 }
 
+const status=(page:Page)=>page.locator('.environment-status');
+const nav=(page:Page,name:string)=>page.getByRole('navigation',{name:'主导航'}).getByRole('button',{name,exact:true});
+
+
 test('first setup, switch, conflict review, recovery, clients and exit reminder',async({page})=>{
  const {state,ctl,jsErrors}=await mockHost(page,false);
  await page.goto('/');
- await expect(page.getByRole('heading',{name:'选好地区，一键切换。'})).toBeVisible();
+ await expect(page.getByRole('heading',{name:'日常环境'})).toBeVisible();
  await expect(page.getByRole('button',{name:'切换环境',exact:true})).toBeDisabled();
  await page.getByRole('button',{name:'美国东部模板'}).click();
  expect(state.config.target.timezone).toBe('');expect(ctl.switchCalls).toBe(0);
- await expect(page.getByRole('heading',{name:'2. 查看差异'})).toBeVisible();
+ await expect(page.getByRole('heading',{name:'将修改 3 项设置'})).toBeVisible();
  ctl.failSwitch=true;await page.getByRole('button',{name:'切换环境',exact:true}).click();
  await expect(page.getByRole('alert')).toContainText('请保存工作并关闭 Claude');
  ctl.failSwitch=false;await page.getByRole('button',{name:'切换环境',exact:true}).click();
- await expect(page.locator('.environment-status')).toContainText('目标环境已启用');
- await expect(page.getByRole('button',{name:'切换环境',exact:true})).toBeDisabled();
- await page.getByRole('button',{name:'切换设置',exact:true}).click();
+ await expect(status(page)).toContainText('目标环境已启用');
+ await expect(page.getByRole('heading',{name:'目标环境生效中'})).toBeVisible();
+ await expect(page.getByRole('button',{name:'切换环境',exact:true})).toHaveCount(0);
  await expect(page.getByRole('button',{name:'日本模板'})).toBeDisabled();
  await expect(page.getByRole('button',{name:'自定义区域设置'})).toBeDisabled();
- await page.getByRole('button',{name:'环境概览',exact:true}).click();
  injectConflict(state);
  const restore=page.getByRole('button',{name:'恢复原环境',exact:true});await restore.click();
  const dialog=page.getByRole('dialog',{name:'发现配置冲突'});
@@ -92,7 +95,7 @@ test('first setup, switch, conflict review, recovery, clients and exit reminder'
  await expect(page.getByRole('button',{name:'取消',exact:true})).toBeDisabled();
  await page.keyboard.press('Escape');await page.mouse.click(10,10);await expect(dialog).toBeVisible();
  expect(ctl.restoreCalls).toBe(1);release();
- await expect(dialog).not.toBeVisible();await expect(page.locator('.environment-status')).toContainText('原环境已恢复');
+ await expect(dialog).not.toBeVisible();await expect(status(page)).toContainText('原环境已恢复');
  expect(ctl.choices.culture).toEqual({action:'keep',observed:state.view.current.culture});
  await page.getByRole('button',{name:'启动 CLI',exact:true}).click();
  await expect(page.getByRole('alert')).toContainText('未找到 Claude CLI');
@@ -104,42 +107,53 @@ test('first setup, switch, conflict review, recovery, clients and exit reminder'
  expect(jsErrors).toEqual([]);
 });
 
-test('MiGate themes, persistent collapsed navigation and compact drawer',async({page})=>{
- const {jsErrors}=await mockHost(page);
+test('custom titlebar, themes, client settings dialog and compact layout',async({page})=>{
+ const {state,jsErrors}=await mockHost(page);
  await page.emulateMedia({colorScheme:'light'});await page.goto('/');
- await expect(page.getByRole('heading',{name:'2. 查看差异'})).toBeVisible();
+ await expect(page.getByRole('heading',{name:'将修改 3 项设置'})).toBeVisible();
+ const bar=page.locator('.titlebar');
+ await expect(bar).toBeVisible();
+ expect(await bar.evaluate(el=>getComputedStyle(el).getPropertyValue('--wails-draggable').trim())).toBe('drag');
+ const controls=page.getByRole('group',{name:'窗口控制'});
+ for(const name of ['最小化','最大化','关闭'])await expect(controls.getByRole('button',{name})).toBeVisible();
+ expect(await controls.getByRole('button',{name:'关闭'}).evaluate(el=>getComputedStyle(el).getPropertyValue('--wails-draggable').trim())).toBe('no-drag');
  await expect(page.locator('html')).toHaveAttribute('data-theme','system');
- await page.screenshot({animations:'disabled',path:'../test-results/ui/overview-light.png',fullPage:true});
+ await page.screenshot({animations:'disabled',path:'../test-results/ui/overview-light.png'});
  await page.emulateMedia({colorScheme:'dark'});await expect(page.locator('html')).toHaveClass(/dark/);
- await page.screenshot({animations:'disabled',path:'../test-results/ui/overview-dark.png',fullPage:true});
- await page.getByRole('button',{name:'收起导航',exact:true}).click();
- await expect(page.locator('.shell')).toHaveAttribute('data-collapsed','true');
- await page.reload();await expect(page.locator('.shell')).toHaveAttribute('data-collapsed','true');
+ await page.screenshot({animations:'disabled',path:'../test-results/ui/overview-dark.png'});
  await page.getByRole('button',{name:'界面主题：跟随系统，点击切换为浅色'}).click();
  await expect(page.locator('html')).not.toHaveClass(/dark/);
  await page.getByRole('button',{name:'界面主题：浅色，点击切换为深色'}).click();
  await page.reload();await expect(page.locator('html')).toHaveAttribute('data-theme','dark');
  await page.emulateMedia({colorScheme:'light'});await expect(page.locator('html')).toHaveClass(/dark/);
- await page.getByRole('button',{name:'切换设置',exact:true}).click();
- await page.getByRole('button',{name:'自定义区域设置'}).click();
- await expect(page.getByRole('combobox',{name:'系统时区',exact:true})).toHaveValue('(UTC-05:00) 美国东部');
- await page.screenshot({animations:'disabled',path:'../test-results/ui/settings-dark.png',fullPage:true});
- await page.setViewportSize({width:850,height:640});
- await expect(page.getByRole('button',{name:'打开导航',exact:true})).toBeVisible();
- await page.screenshot({animations:'disabled',path:'../test-results/ui/compact-settings-dark.png',fullPage:true});
- await page.getByRole('button',{name:'打开导航',exact:true}).click();
- const drawer=page.getByRole('dialog',{name:'ClaudePro'});await expect(drawer).toBeVisible();
- await drawer.getByRole('button',{name:'恢复记录',exact:true}).click();await expect(drawer).not.toBeVisible();
- await expect(page.getByRole('heading',{name:'每一次修改，都有记录。'})).toBeVisible();
+ await page.getByRole('button',{name:'客户端设置'}).click();
+ const settings=page.getByRole('dialog',{name:'客户端设置',exact:true});await expect(settings).toBeVisible();
+ await expect(settings.getByLabel('CLI 工作目录')).toHaveValue('C:\\开发项目');
+ await settings.getByLabel('CLI 工作目录').fill('C:\\新目录');
+ await page.screenshot({animations:'disabled',path:'../test-results/ui/settings-dark.png'});
+ await settings.getByRole('button',{name:'保存设置'}).click();
+ await expect(settings).not.toBeVisible();
+ expect(state.config.workDir).toBe('C:\\新目录');expect(state.config.target.region).toBe('244');
+ await page.setViewportSize({width:820,height:600});
+ await expect(nav(page,'恢复记录')).toBeVisible();
+ await nav(page,'恢复记录').click();
+ await expect(page.getByRole('heading',{name:'恢复记录',exact:true})).toBeVisible();
  await page.getByRole('button',{name:'界面主题：深色，点击切换为跟随系统'}).click();
  await expect(page.locator('html')).not.toHaveClass(/dark/);
- await page.screenshot({animations:'disabled',path:'../test-results/ui/compact-history-light.png',fullPage:true});
- await page.getByRole('button',{name:'打开导航',exact:true}).click();await drawer.getByRole('button',{name:'环境概览',exact:true}).click();
- await expect(drawer).not.toBeVisible();
+ await page.screenshot({animations:'disabled',path:'../test-results/ui/compact-history-light.png'});
+ await nav(page,'环境概览').click();
  await expect(page.getByRole('button',{name:'切换环境',exact:true})).toBeInViewport();
- await page.screenshot({animations:'disabled',path:'../test-results/ui/compact-overview-light.png',fullPage:true});
+ await page.screenshot({animations:'disabled',path:'../test-results/ui/compact-overview-light.png'});
  expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBeTruthy();
  expect(jsErrors).toEqual([]);
+});
+
+test('macOS layout leaves room for traffic lights and hides window buttons',async({page})=>{
+ await mockHost(page);await page.goto('/?platform=darwin');
+ await expect(page.locator('html')).toHaveAttribute('data-platform','darwin');
+ await expect(page.locator('.traffic-light-space')).toBeVisible();
+ await expect(page.getByRole('group',{name:'窗口控制'})).toHaveCount(0);
+ await page.screenshot({animations:'disabled',path:'../test-results/ui/overview-mac.png'});
 });
 
 test('interrupted recovery and damaged backup retain protections',async({page})=>{
@@ -147,11 +161,13 @@ test('interrupted recovery and damaged backup retain protections',async({page})=
  state.view.journal={version:1,id:'interrupted',status:'needs_restore',original,target,steps:[],log:[{time:'2026-10-24T00:00:00Z',message:'发现未完成操作，请恢复原环境'}]};
  state.warning='设置文件损坏，但恢复记录仍可读取。';state.demo=true;
  await page.goto('/');
- await expect(page.getByText('模拟模式 ·',{exact:false})).toBeVisible();
- await expect(page.locator('.environment-status')).toContainText('需要恢复');
- for(const name of ['切换环境','启动 CLI','启动 Desktop'])await expect(page.getByRole('button',{name,exact:true})).toBeDisabled();
+ await expect(page.getByText('模拟模式：',{exact:false})).toBeVisible();
+ await expect(status(page)).toContainText('需要恢复');
+ await expect(page.getByRole('heading',{name:'需要恢复原环境'})).toBeVisible();
+ await expect(page.getByRole('button',{name:'切换环境',exact:true})).toHaveCount(0);
+ for(const name of ['启动 CLI','启动 Desktop'])await expect(page.getByRole('button',{name,exact:true})).toBeDisabled();
  await expect(page.getByRole('button',{name:'恢复原环境',exact:true})).toBeEnabled();
- await page.getByRole('button',{name:'恢复记录',exact:true}).click();
+ await nav(page,'恢复记录').click();
  await expect(page.getByText('发现未完成操作，请恢复原环境',{exact:true})).toBeVisible();
  await page.screenshot({animations:'disabled',path:'../test-results/ui/recovery-history.png',fullPage:true});
  ctl.failRead=true;await page.reload();
@@ -159,10 +175,8 @@ test('interrupted recovery and damaged backup retain protections',async({page})=
  await expect(page.getByRole('button',{name:'切换环境',exact:true})).toHaveCount(0);
 });
 
-test('long Windows option list remains scrollable and keyboard selectable',async({page})=>{
- await mockHost(page,true,true);await page.setViewportSize({width:850,height:640});await page.goto('/');
- await page.getByRole('button',{name:'打开导航',exact:true}).click();
- await page.getByRole('dialog',{name:'ClaudePro'}).getByRole('button',{name:'切换设置',exact:true}).click();
+test('long option list remains scrollable and keyboard selectable',async({page})=>{
+ await mockHost(page,true,true);await page.setViewportSize({width:820,height:600});await page.goto('/');
  await page.getByRole('button',{name:'自定义区域设置'}).click();
  const field=page.getByRole('combobox',{name:'区域格式',exact:true});
  await field.click();const popup=page.getByRole('listbox');await expect(popup).toBeVisible();
@@ -171,7 +185,6 @@ test('long Windows option list remains scrollable and keyboard selectable',async
  await expect(field).toHaveValue('测试区域格式 602');
  expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBeTruthy();
 });
-
 
 test('search previews preserve selected values, drafts survive navigation and restored targets can change',async({page})=>{
  const {state,ctl}=await mockHost(page);await page.goto('/');
@@ -182,7 +195,7 @@ test('search previews preserve selected values, drafts survive navigation and re
  const culture=page.getByRole('combobox',{name:'区域格式',exact:true});
  await culture.fill('no-such-option');await expect(page.getByText('没有匹配的选项，请尝试名称或代码')).toBeVisible();
  await page.keyboard.press('Escape');
- await page.getByRole('button',{name:'切换设置',exact:true}).click();
+ await nav(page,'环境检测').click();await nav(page,'环境概览').click();
  await expect(page.getByRole('combobox',{name:'区域格式',exact:true})).toHaveValue('英语（美国） / en-US');
  await expect(page.getByRole('combobox',{name:'国家 / 地区',exact:true})).toHaveValue('日本 (JP)');
  await select(page,'系统时区','(UTC+09:00) 大阪、东京');
@@ -190,13 +203,12 @@ test('search previews preserve selected values, drafts survive navigation and re
  await page.getByRole('option',{name:'日语（日本） / ja-JP'}).click();
  await expect(page.getByRole('button',{name:'日本模板'})).toHaveAttribute('aria-pressed','true');
  await expect(page.getByRole('button',{name:'英国模板'})).toBeDisabled();
- await page.getByRole('button',{name:'环境概览',exact:true}).click();
  expect(ctl.switchCalls).toBe(0);expect(state.config.target.region).toBe('244');
  await page.getByRole('button',{name:'切换环境',exact:true}).click();
- await expect(page.locator('.environment-status')).toContainText('目标环境已启用');
+ await expect(status(page)).toContainText('目标环境已启用');
  expect(state.config.target.region).toBe('122');
  await page.getByRole('button',{name:'恢复原环境',exact:true}).click();
- await expect(page.locator('.environment-status')).toContainText('原环境已恢复');
+ await expect(status(page)).toContainText('原环境已恢复');
  await page.getByRole('button',{name:'美国东部模板'}).click();
  await expect(page.getByRole('button',{name:'美国东部模板'})).toHaveAttribute('aria-pressed','true');
 });
@@ -204,30 +216,29 @@ test('search previews preserve selected values, drafts survive navigation and re
 test('network is manual, retryable and does not block restoration; diagnostics survive corrupt backup',async({page})=>{
  const {state,ctl}=await mockHost(page);await page.goto('/');
  await page.getByRole('button',{name:'切换环境',exact:true}).click();
- await expect(page.locator('.environment-status')).toContainText('目标环境已启用');
- await page.getByRole('button',{name:'环境检测',exact:true}).click();expect(ctl.networkCalls).toBe(0);
+ await expect(status(page)).toContainText('目标环境已启用');
+ await nav(page,'环境检测').click();expect(ctl.networkCalls).toBe(0);
  await expect(page.getByText('已自动发现客户端',{exact:true})).toBeVisible();
  let release!:()=>void;ctl.holdNetwork=new Promise<void>(r=>release=r);
  await page.getByRole('button',{name:'检测网络出口',exact:true}).click();
  await expect(page.getByRole('button',{name:'检测中…',exact:true})).toBeDisabled();
- await page.getByRole('button',{name:'环境概览',exact:true}).click();
+ await nav(page,'环境概览').click();
  await page.getByRole('button',{name:'恢复原环境',exact:true}).click();
- await expect(page.locator('.environment-status')).toContainText('原环境已恢复');
- release();await page.getByRole('button',{name:'环境检测',exact:true}).click();
+ await expect(status(page)).toContainText('原环境已恢复');
+ release();await nav(page,'环境检测').click();
  await expect(page.getByText('203.0.113.8',{exact:true})).toBeVisible();
  await expect(page.getByText('本次检测出口国家与所选目标不同',{exact:false})).toBeVisible();
  await page.screenshot({animations:'disabled',path:'../test-results/ui/diagnostics-light.png',fullPage:true});
- ctl.networkFail=true;await page.getByRole('button',{name:'检测网络出口',exact:true}).click();
- await expect(page.getByText('未能检测：连接失败或请求超时',{exact:false})).toBeVisible();
- ctl.networkFail=false;await page.getByRole('button',{name:'检测网络出口',exact:true}).click();
+ ctl.networkFail=true;await page.getByRole('button',{name:'重新检测并推荐',exact:true}).click();
+ await expect(page.getByText('连接失败或请求超时',{exact:false})).toBeVisible();
+ ctl.networkFail=false;await page.getByRole('button',{name:'重新检测并推荐',exact:true}).click();
  await expect(page.getByText('203.0.113.8',{exact:true})).toBeVisible();
- await page.reload();await page.getByRole('button',{name:'环境检测',exact:true}).click();
+ await page.reload();await nav(page,'环境检测').click();
  await expect(page.getByText('尚未联网检测。结果仅保留在本次应用会话。')).toBeVisible();expect(ctl.networkCalls).toBe(3);
- ctl.failRead=true;await page.reload();await page.getByRole('button',{name:'环境检测',exact:true}).click();
+ ctl.failRead=true;await page.reload();await nav(page,'环境检测').click();
  await expect(page.getByText('无法读取恢复记录，修改功能已停用',{exact:true})).toBeVisible();
  expect(state.view.journal.status).toBe('restored');
 });
-
 
 test('exit timezone recommends a coast, adoption only previews, uncertain locations never guess',async({page})=>{
  const {state,ctl}=await mockHost(page,false);
@@ -236,18 +247,20 @@ test('exit timezone recommends a coast, adoption only previews, uncertain locati
  await page.getByRole('button',{name:'检测并推荐地区'}).click();
  await expect(page.getByText('推荐：美国西部',{exact:true})).toBeVisible();
  await expect(page.getByText('203.0.113.8 · Los Angeles / California / United States · America/Los_Angeles',{exact:true})).toBeVisible();
+ await expect(page.getByRole('button',{name:'美国西部模板'}).locator('.preset-tag')).toHaveText('推荐');
  expect(state.config.target.timezone).toBe('');expect(ctl.switchCalls).toBe(0);
  await page.getByRole('button',{name:'采用推荐',exact:true}).click();
  await expect(page.getByRole('button',{name:'美国西部模板'})).toHaveAttribute('aria-pressed','true');
  expect(state.config.target.timezone).toBe('');expect(ctl.switchCalls).toBe(0);
  await page.screenshot({animations:'disabled',path:'../test-results/ui/recommendation-west.png',fullPage:true});
  await page.getByRole('button',{name:'切换环境',exact:true}).click();
- await expect(page.locator('.environment-status')).toContainText('目标环境已启用');
+ await expect(status(page)).toContainText('目标环境已启用');
+ await expect(page.getByRole('button',{name:'采用推荐',exact:true})).toHaveCount(0);
+ await page.getByRole('button',{name:'恢复原环境',exact:true}).click();
+ await expect(status(page)).toContainText('原环境已恢复');
  ctl.networkData={...ctl.networkData,city:'New York',region:'New York',timezone:'America/New_York',recommendedPreset:'us-east',recommendationReason:'出口时区为 America/New_York（美国东部时间），推荐美国东部模板。'};
  await page.getByRole('button',{name:'重新检测并推荐'}).click();
  await expect(page.getByText('推荐：美国东部',{exact:true})).toBeVisible();
- await expect(page.getByRole('button',{name:'采用推荐',exact:true})).toBeDisabled();
- await page.getByRole('button',{name:'恢复原环境',exact:true}).click();
  await expect(page.getByRole('button',{name:'采用推荐',exact:true})).toBeEnabled();
  ctl.networkData={...ctl.networkData,city:'Chicago',region:'Illinois',timezone:'America/Chicago',recommendedPreset:'',recommendationReason:'出口时区为 America/Chicago，未匹配现有美东 / 美西模板，请使用自定义。'};
  await page.getByRole('button',{name:'重新检测并推荐'}).click();
@@ -256,10 +269,9 @@ test('exit timezone recommends a coast, adoption only previews, uncertain locati
  await expect(page.getByRole('button',{name:'美国西部模板'})).toHaveAttribute('aria-pressed','true');
  ctl.networkFail=true;await page.getByRole('button',{name:'重新检测并推荐'}).click();
  await expect(page.getByText('暂不能推荐现有模板',{exact:true})).toHaveCount(0);
- await expect(page.getByText('未能检测：连接失败或请求超时',{exact:false})).toBeVisible();
+ await expect(page.getByText('连接失败或请求超时',{exact:false})).toBeVisible();
  expect(ctl.switchCalls).toBe(1);
 });
-
 
 test('multi-source fallback shows provenance, cooldown blocks repeated calls, conflict clears recommendation',async({page})=>{
  const {ctl}=await mockHost(page,false);
@@ -278,7 +290,7 @@ test('multi-source fallback shows provenance, cooldown blocks repeated calls, co
  await page.getByRole('button',{name:'重新检测并推荐'}).click();
  await expect(page.getByText('检测来源存在分歧',{exact:true})).toBeVisible();
  await expect(page.getByRole('button',{name:'采用推荐',exact:true})).toHaveCount(0);
- await page.setViewportSize({width:850,height:640});
+ await page.setViewportSize({width:820,height:600});
  await page.screenshot({animations:'disabled',path:'../test-results/ui/network-conflict-compact.png',fullPage:true});
  expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBeTruthy();
 });

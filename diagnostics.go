@@ -50,7 +50,7 @@ func (s *Service) GetPresets() ([]core.Preset, error) {
 	if err != nil {
 		return nil, err
 	}
-	return core.Presets(c), nil
+	return core.Presets(c, platform.Kind), nil
 }
 
 func (s *Service) GetDiagnostics(target core.Target) (LocalReport, error) {
@@ -64,7 +64,7 @@ func (s *Service) GetDiagnostics(target core.Target) (LocalReport, error) {
 	}
 	env, err := s.host.Read()
 	if err != nil {
-		add("environment", "Windows 设置", "unknown", "无法读取当前设置，请重新检查", "refresh")
+		add("environment", "系统设置", "unknown", "无法读取当前设置，请重新检查", "refresh")
 	} else {
 		for _, f := range core.Fields {
 			status, detail := "info", "当前："+env[f].Label+"；尚未选择目标"
@@ -106,11 +106,7 @@ func (s *Service) GetDiagnostics(target core.Target) (LocalReport, error) {
 		}
 		status, detail := "ok", "已自动发现客户端"
 		if manual != "" {
-			ext := []string{".exe"}
-			if kind == "cli" {
-				ext = append(ext, ".cmd", ".ps1")
-			}
-			if platform.ValidateLaunchPath(manual, ext...) != nil {
+			if platform.ValidateClientPath(kind, manual) != nil {
 				status = "warn"
 				detail = "手动指定的客户端路径不可用"
 			} else {
@@ -141,7 +137,7 @@ func (s *Service) GetDiagnostics(target core.Target) (LocalReport, error) {
 		if err != nil {
 			add("proxy", "系统代理", "unknown", "无法读取当前用户代理设置", "refresh")
 		} else {
-			add("proxy", "系统代理", "info", fmt.Sprintf("当前用户 Internet Settings：手动代理启用=%t；PAC 已配置=%t；不代表客户端实际路由", manual, pac), "refresh")
+			add("proxy", "系统代理", "info", fmt.Sprintf("当前用户系统代理：手动代理启用=%t；PAC 已配置=%t；不代表客户端实际路由", manual, pac), "refresh")
 		}
 		var names []string
 		for _, name := range []string{"HTTP_PROXY", "HTTPS_PROXY", "NO_PROXY", "ALL_PROXY", "http_proxy", "https_proxy", "no_proxy", "all_proxy"} {
@@ -198,7 +194,7 @@ func recommendTemplate(r *NetworkReport) {
 		}
 		return
 	}
-	for _, p := range core.Presets(core.Catalog{}) {
+	for _, p := range core.Presets(core.Catalog{}, platform.Kind) {
 		if p.Country == r.CountryCode {
 			r.RecommendedPreset = p.ID
 			r.RecommendationReason = "出口国家为 " + r.Country + "，推荐" + p.Name + "模板。"

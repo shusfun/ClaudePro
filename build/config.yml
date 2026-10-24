@@ -8,9 +8,9 @@ info:
   companyName: "ClaudePro"
   productName: "ClaudePro"
   productIdentifier: "local.claudepro.environment"
-  description: "Windows 环境切换与精确还原"
+  description: "系统环境切换与精确还原"
   copyright: "(c) 2026 ClaudePro contributors"
-  comments: "Local Windows environment switcher"
+  comments: "Local Windows / macOS environment switcher"
   version: "0.1.0"
   # cfBundleIconName: "appicon" # The macOS icon name in Assets.car icon bundles (optional)
   #                               # Should match the name of your .icon file without the extension

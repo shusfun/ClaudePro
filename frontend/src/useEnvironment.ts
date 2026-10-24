@@ -4,14 +4,17 @@ import * as API from '../bindings/claudepro/service';
 import type {State, LocalReport, NetworkReport} from '../bindings/claudepro/models';
 import type {Catalog, Config, Clients, Choice, Conflict, Preset, Target} from '../bindings/claudepro/internal/core/models';
 import {useToast} from '@claudepro/ui';
+import {isMac} from './platform';
 
 export const fields = ['timezone', 'culture', 'region'] as const;
 export const labels = {timezone: '系统时区', culture: '区域格式', region: '国家 / 地区'};
 const states: Record<string,string> = {active:'目标环境已启用', restored:'原环境已恢复', switching:'正在切换', restoring:'正在恢复', needs_restore:'需要恢复'};
 const blank: Config = {version:1,target:{timezone:'',culture:'',region:''},cliPath:'',desktopPath:'',workDir:''};
 function errorText(e: unknown) { return e instanceof Error ? e.message : String(e); }
+const pathsOf=(c:Config):ClientPaths=>({workDir:c.workDir,cliPath:c.cliPath,desktopPath:c.desktopPath});
 
-export type Tab = 'home'|'settings'|'history'|'diagnostics';
+export type Tab = 'home'|'diagnostics'|'history';
+export type ClientPaths = Pick<Config,'workDir'|'cliPath'|'desktopPath'>;
 export function useEnvironment() {
  const toast=useToast();
  const operation=useRef(false);
@@ -35,7 +38,8 @@ export function useEnvironment() {
  const networkPending=useRef(false);
  const localPending=useRef<Promise<void>|null>(null);
  const [draft,setDraft]=useState<Config>(blank);
- const [tab,setTab]=useState<'home'|'settings'|'history'|'diagnostics'>('home');
+ const [tab,setTab]=useState<Tab>('home');
+ const [settingsOpen,setSettingsOpen]=useState(false);
  const [busy,setBusy]=useState(false);
  const [loading,setLoading]=useState(true);
  const [error,setError]=useState('');
@@ -108,15 +112,22 @@ export function useEnvironment() {
   try{await API.Restore(choices);setConflicts([]);}
   catch(e){const latest=await refresh();setConflicts(latest.view.conflicts||[]);setDecisions({});throw e;}
  },'恢复流程完成');
- const save=()=>act(async()=>{await API.SaveConfig(draft);await refresh(true);setTab('home');},'目标环境已保存');
+ // 设置窗口只保存客户端路径，目标沿用已保存的值，避免与首页未提交的选择互相覆盖。
+ const save=(paths:ClientPaths)=>act(async()=>{
+  const latest=await refresh();
+  await API.SaveConfig({...latest.config,...paths,version:1});
+  const next=await refresh();setDraft(d=>({...d,...pathsOf(next.config)}));setSettingsOpen(false);
+ },'客户端设置已保存');
  const reload=()=>act(async()=>{await refresh();setCatalog(await API.GetCatalog());setClients(await API.GetClients());setPresets(await API.GetPresets()||[]);},'已重新读取本机状态');
- const browse=async(field:'workDir'|'cliPath'|'desktopPath')=>{
+ const browse=async(field:keyof ClientPaths):Promise<string|undefined>=>{
   if(disabled||operation.current)return;
   operation.current=true;setBusy(true);setError('');
   try{
-   const path=await Dialogs.OpenFile({Title:field==='workDir'?'选择 CLI 工作目录':'选择 Claude 客户端',CanChooseDirectories:field==='workDir',CanChooseFiles:field!=='workDir',AllowsMultipleSelection:false,Filters:field==='workDir'?[]:[{DisplayName:'客户端文件',Pattern:field==='cliPath'?'*.exe;*.cmd;*.ps1':'*.exe'}]});
-   if(path)setDraft(d=>({...d,[field]:path}));
-  }catch(e){setError(errorText(e));}finally{setBusy(false);operation.current=false;}
+   // macOS 的 .app 是应用包，系统选择器按文件处理；可执行文件没有扩展名，不设过滤。
+   const filters=isMac()||field==='workDir'?[]:[{DisplayName:'客户端文件',Pattern:field==='cliPath'?'*.exe;*.cmd;*.ps1':'*.exe'}];
+   const path=await Dialogs.OpenFile({Title:field==='workDir'?'选择 CLI 工作目录':'选择 Claude 客户端',CanChooseDirectories:field==='workDir',CanChooseFiles:field!=='workDir',AllowsMultipleSelection:false,Filters:filters});
+   return path||undefined;
+  }catch(e){setError(errorText(e));return undefined;}finally{setBusy(false);operation.current=false;}
  };
 
  const confirmExit=async()=>{
@@ -125,7 +136,7 @@ export function useEnvironment() {
   try{await API.ConfirmExit();}catch(e){setError(errorText(e));}
   finally{operation.current=false;setBusy(false);}
  };
- return {presets,localReport,localError,localBusy,checkLocal,networkReport,networkError,networkBusy,networkCooldown,checkNetwork,state,catalog,clients,draft,setDraft,tab,setTab,busy,loading,error,setError,progress,exit,setExit,
+ return {settingsOpen,setSettingsOpen,presets,localReport,localError,localBusy,checkLocal,networkReport,networkError,networkBusy,networkCooldown,checkNetwork,state,catalog,clients,draft,setDraft,tab,setTab,busy,loading,error,setError,progress,exit,setExit,
   conflicts,setConflicts,decisions,setDecisions,journal,active,configured,disabled,status,label,
   restore,commitRestore,save,reload,browse,confirmExit,
   switchEnvironment:()=>act(()=>API.SwitchTo(draft.target),'切换完成，可以启动 Claude'),

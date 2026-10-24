@@ -1,4 +1,4 @@
-name: Windows checks
+name: Checks
 on:
   push:
   pull_request:
@@ -31,3 +31,34 @@ jobs:
         with:
           name: claudepro-windows-x64
           path: bin/claudepro.exe
+
+  macos:
+    # Apple Silicon runner; the Intel slice is cross-compiled with clang and merged by lipo.
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+      - run: npm ci --prefix frontend
+      - run: npm run build --prefix frontend
+      - run: go test ./...
+      - run: go vet ./...
+      - run: go install github.com/wailsapp/wails/v3/cmd/wails3@v3.0.0-alpha2.117
+      - run: wails3 task darwin:package:universal
+      - name: Verify universal binary
+        run: |
+          archs=$(lipo -archs bin/claudepro.app/Contents/MacOS/claudepro)
+          echo "$archs"
+          echo "$archs" | grep -qw x86_64 && echo "$archs" | grep -qw arm64
+      - name: Zip app bundle
+        run: ditto -c -k --keepParent bin/claudepro.app bin/claudepro-macos-universal.zip
+      - uses: actions/upload-artifact@v4
+        with:
+          name: claudepro-macos-universal
+          path: bin/claudepro-macos-universal.zip

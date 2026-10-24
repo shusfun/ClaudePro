@@ -8,7 +8,7 @@ import (
 	"sync"
 )
 
-// Demo uses its own directory and never invokes Windows settings or clients.
+// Demo uses its own directory and never invokes system settings or clients.
 type Demo struct {
 	mu  sync.Mutex
 	dir string
@@ -21,6 +21,13 @@ func (d *Demo) Read() (core.Environment, error) {
 	env := core.Environment{}
 	err := core.ReadJSON(filepath.Join(d.dir, "environment.json"), &env)
 	if errors.Is(err, os.ErrNotExist) {
+		if Kind == "darwin" {
+			return core.Environment{
+				"timezone": {Label: "Asia/Shanghai", Data: map[string]string{"id": "Asia/Shanghai", "auto": "1"}},
+				"culture":  {Label: "zh_CN", Data: map[string]string{"value": "zh_CN", "present": "1"}},
+				"region":   {Label: "CN", Data: map[string]string{"value": "CN", "present": "1"}},
+			}, nil
+		}
 		return core.Environment{
 			"timezone": {Label: "China Standard Time", Data: map[string]string{"id": "China Standard Time"}},
 			"culture":  {Label: "zh-CN", Data: map[string]string{"LocaleName": "zh-CN", "sShortDate": "yyyy/MM/dd"}},
@@ -35,7 +42,14 @@ func (d *Demo) Catalog() (core.Catalog, error) {
 		Cultures:  []core.Option{{ID: "zh-CN", Name: "中文（中国） / zh-CN"}, {ID: "en-US", Name: "英语（美国） / en-US"}},
 		Regions:   []core.Option{{ID: "45", Name: "中国 (CN)"}, {ID: "244", Name: "美国 (US)"}},
 	}
-	for _, preset := range core.Presets(core.Catalog{}) {
+	if Kind == "darwin" {
+		catalog = core.Catalog{
+			Timezones: []core.Option{{ID: "Asia/Shanghai", Name: "(UTC+08:00) Asia/Shanghai"}},
+			Cultures:  []core.Option{{ID: "zh_CN", Name: "中文（中国） / zh_CN"}},
+			Regions:   []core.Option{{ID: "CN", Name: "中国 (CN)"}},
+		}
+	}
+	for _, preset := range core.Presets(core.Catalog{}, Kind) {
 		catalog.Timezones = append(catalog.Timezones, core.Option{ID: preset.Target.Timezone, Name: preset.Name + " / " + preset.Target.Timezone})
 		catalog.Cultures = append(catalog.Cultures, core.Option{ID: preset.Target.Culture, Name: preset.Target.Culture})
 		catalog.Regions = append(catalog.Regions, core.Option{ID: preset.Target.Region, Name: preset.Name + " (" + preset.Country + ")"})
